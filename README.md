@@ -103,3 +103,4 @@ src/
 - `SmartImage` shows a branded skeleton while loading and a fallback if a photo 404s, so a
   swapped-out image never leaves a broken icon.
 - Animations respect `prefers-reduced-motion`.
+# my-kingdom
