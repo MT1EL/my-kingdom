@@ -26,12 +26,15 @@ Render → **New → Blueprint** → this repository. It reads `render.yaml` and
 creates all three resources, wiring the database URL and the two service
 hostnames together automatically.
 
-Set two variables on `mykingdom-api` before the first deploy:
+Set these on `mykingdom-api` before the first deploy:
 
 | Variable | Value |
 | --- | --- |
 | `ADMIN_EMAIL` | your dashboard login |
 | `ADMIN_PASSWORD` | a real password, not `changeme123` |
+| `RESEND_API_KEY` | from resend.com — see **Email** below |
+| `EMAIL_FROM` | e.g. `ჩემი სამეფო <hello@yourdomain.ge>` |
+| `EMAIL_VENUE_TO` | where you want new requests to land (optional) |
 
 Everything else — `DATABASE_URL`, `SESSION_SECRET`, `CORS_ORIGINS`,
 `STORAGE_DRIVER`, `SERVE_ADMIN` — the blueprint fills in.
@@ -75,6 +78,36 @@ expiry is real, the options are a paid Postgres (no code change) or moving
 the database to another free host such as Neon or Turso.
 
 Either way, take backups (below).
+
+---
+
+## Email
+
+Two messages go out the moment a family submits a request:
+
+- **To the venue** — every detail, plus a button that opens the request in
+  the dashboard. Without this you would only learn about a booking by
+  opening the dashboard and looking.
+- **To the family** — a copy with their reference number, stating plainly
+  that the booking is *not confirmed yet*. The booking form promises this
+  copy, so leaving it unsent would make the site dishonest.
+
+Set up: create an account at [resend.com](https://resend.com), make an API
+key, and set `RESEND_API_KEY` and `EMAIL_FROM`.
+
+`EMAIL_FROM` must be on a domain verified with Resend (it walks you through
+the DNS records). Without a domain of your own, use their sandbox sender —
+`onboarding@resend.dev` — which works but is likelier to land in spam.
+
+`EMAIL_VENUE_TO` decides where the venue's copy goes. Leave it unset and the
+contact email from **პარამეტრები** in the dashboard is used, so you can
+change it later without touching Render.
+
+Leaving `EMAIL_DRIVER` as `none` sends nothing and logs a warning at boot.
+
+Nothing about email can cost you a booking: the messages are sent *after*
+the family gets their confirmation, and a provider outage is logged rather
+than thrown. A failed email never turns a saved request into an error.
 
 ---
 

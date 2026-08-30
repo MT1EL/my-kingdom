@@ -4,6 +4,8 @@ import { db, schema } from '../db/client.ts'
 import { getAvailability, getDayAvailability, isISODate } from '../lib/availability.ts'
 import { ApiError, route } from '../lib/http.ts'
 import { newId } from '../lib/ids.ts'
+import { notifyBookingReceived } from '../lib/email/index.ts'
+import { toBooking } from '../lib/serialize.ts'
 import { availabilityQuerySchema, bookingRequestSchema, normalisePhone } from '../lib/validators.ts'
 import type { BookingRequestResult, ISODate } from '../../../shared/types.ts'
 
@@ -145,26 +147,39 @@ bookingsRouter.post(
       reference = buildReference(body.date)
     }
 
-    await db.insert(schema.bookings).values({
-      id: newId(),
-      reference,
-      date: body.date,
-      time: body.time,
-      programId: body.programId,
-      extraIds: JSON.stringify(validExtras.map((extra) => extra.id)),
-      childName: body.childName,
-      childAge: body.childAge,
-      childrenCount: body.childrenCount,
-      parentName: body.parentName,
-      phone: normalisePhone(body.phone),
-      email: body.email || null,
-      notes: body.notes,
-      status: 'received',
-      createdAt: submittedAt,
-      updatedAt: submittedAt,
-    })
+    const bookingId = newId()
+
+    const [inserted] = await db
+      .insert(schema.bookings)
+      .values({
+        id: bookingId,
+        reference,
+        date: body.date,
+        time: body.time,
+        programId: body.programId,
+        extraIds: JSON.stringify(validExtras.map((extra) => extra.id)),
+        childName: body.childName,
+        childAge: body.childAge,
+        childrenCount: body.childrenCount,
+        parentName: body.parentName,
+        phone: normalisePhone(body.phone),
+        email: body.email || null,
+        notes: body.notes,
+        status: 'received',
+        createdAt: submittedAt,
+        updatedAt: submittedAt,
+      })
+      .returning()
 
     const result: BookingRequestResult = { reference, status: 'received', submittedAt }
     res.status(201).json(result)
+
+    // After the response, deliberately. The family should not wait on an
+    // email provider, and a provider being down must never turn a saved
+    // booking into an error on their screen — the request is already safe
+    // in the database, and a failure here is logged, not thrown.
+    if (inserted) {
+      void notifyBookingReceived(toBooking(inserted))
+    }
   }),
 )

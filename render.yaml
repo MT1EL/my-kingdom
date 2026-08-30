@@ -71,6 +71,27 @@ services:
       - key: ADMIN_PASSWORD
         sync: false
 
+      # --- email --------------------------------------------------
+      # Booking notifications: one to the venue, one to the family.
+      # Leave EMAIL_DRIVER as "none" and nothing is sent — the API logs a
+      # warning at boot to that effect.
+      - key: EMAIL_DRIVER
+        value: resend
+      - key: RESEND_API_KEY
+        sync: false
+      # Must be on a domain verified with Resend, or its sandbox sender.
+      - key: EMAIL_FROM
+        sync: false
+      # Where new requests are read. Falls back to the dashboard's contact
+      # email if left unset.
+      - key: EMAIL_VENUE_TO
+        sync: false
+      # Left unset on purpose: the API falls back to Render's own
+      # RENDER_EXTERNAL_URL + /admin, which is exactly where the dashboard
+      # lives. Set it only if the dashboard moves elsewhere.
+      # - key: DASHBOARD_URL
+      #   sync: false
+
       # The public site's origin. The dashboard is same-origin so it needs
       # no entry here.
       - key: CORS_ORIGINS

@@ -112,6 +112,40 @@ export const env = {
    */
   serveAdmin: process.env.SERVE_ADMIN === "true",
 
+  /**
+   * Outgoing mail: the venue's notification of a new request, and the
+   * family's copy. "none" logs instead of sending, so development needs no
+   * account; production without it means nobody is told about a booking.
+   */
+  email: {
+    driver: (process.env.EMAIL_DRIVER ?? "none") as "none" | "resend",
+    resendApiKey: process.env.RESEND_API_KEY ?? "",
+    /** Must be an address on a domain verified with the provider. */
+    from: process.env.EMAIL_FROM ?? "",
+    /** Where a family's reply goes, if different from `from`. */
+    replyTo: process.env.EMAIL_REPLY_TO ?? "",
+    /**
+     * Where the venue reads its notifications. Falls back to the contact
+     * email set in the dashboard, so it is one less thing to configure.
+     */
+    venueTo: process.env.EMAIL_VENUE_TO ?? "",
+    /**
+     * Used for the "open in the dashboard" button in the venue's email.
+     *
+     * Falls back to Render's own RENDER_EXTERNAL_URL, which is the service's
+     * public address — the dashboard is served from this same server at
+     * /admin, so that is where the link points.
+     */
+    dashboardUrl: (() => {
+      const explicit = (process.env.DASHBOARD_URL ?? "").replace(/\/+$/, "");
+      if (explicit) {
+        return /^https?:\/\//.test(explicit) ? explicit : `https://${explicit}`;
+      }
+      const render = (process.env.RENDER_EXTERNAL_URL ?? "").replace(/\/+$/, "");
+      return render ? `${render}/admin` : null;
+    })(),
+  },
+
   session: {
     cookieName: "mk_session",
     /** How long a moderator stays signed in. */
@@ -163,6 +197,28 @@ export function assertProductionConfig(): void {
     if (missing.length > 0) {
       problems.push(
         `STORAGE_DRIVER is "cloudinary" but ${missing.join(", ")} ${missing.length === 1 ? "is" : "are"} unset — photo uploads would fail.`,
+      );
+    }
+  }
+  if (env.email.driver === "none") {
+    // Not fatal, but it means a family can book and nobody finds out unless
+    // somebody happens to open the dashboard.
+    console.warn(
+      '[api] EMAIL_DRIVER is "none" — no notification is sent when a booking arrives.',
+    );
+  } else if (env.email.driver === "resend") {
+    const missing = (
+      [
+        ["RESEND_API_KEY", env.email.resendApiKey],
+        ["EMAIL_FROM", env.email.from],
+      ] as const
+    )
+      .filter(([, value]) => !value)
+      .map(([name]) => name);
+
+    if (missing.length > 0) {
+      problems.push(
+        `EMAIL_DRIVER is "resend" but ${missing.join(", ")} ${missing.length === 1 ? "is" : "are"} unset — booking notifications would fail.`,
       );
     }
   }
