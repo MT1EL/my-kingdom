@@ -51,6 +51,23 @@ const resendDriver: Driver = async (envelope) => {
 
   if (!response.ok) {
     const body = await response.text()
+
+    // Resend's sandbox sender only delivers to the account owner's own
+    // address. That is the first wall anyone hits before verifying a domain,
+    // and its error does not say what to do about it.
+    if (response.status === 403 && /only send testing emails/i.test(body)) {
+      throw new Error(
+        `Resend is in test mode, so it will only deliver to your own account address — ${envelope.to} was refused.\n` +
+          'Verify a domain at resend.com/domains and set EMAIL_FROM to an address on it.',
+      )
+    }
+
+    if (response.status === 401 || response.status === 403) {
+      throw new Error(
+        `Resend rejected the API key (${response.status}). Check RESEND_API_KEY.`,
+      )
+    }
+
     throw new Error(`Resend refused the message (${response.status}): ${body.slice(0, 300)}`)
   }
 }
