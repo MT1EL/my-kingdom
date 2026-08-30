@@ -79,6 +79,8 @@ same time; confirming one in the dashboard is what takes it off the calendar.
 
 ## Deploying
 
+See [../DEPLOYMENT.md](../DEPLOYMENT.md) for the full walkthrough.
+
 ```bash
 npm run build     # tsc → dist/
 npm start         # node dist/server/src/index.js
@@ -88,5 +90,14 @@ Set `NODE_ENV=production`, `SESSION_SECRET`, `ADMIN_PASSWORD` and
 `CORS_ORIGINS` (the site's and dashboard's origins, comma-separated). The
 server refuses to start if any of those still hold a development default.
 
-Run it behind nginx or Caddy with TLS — the session cookie is `Secure` in
-production and will not be sent over plain HTTP.
+On boot it applies migrations and seeds anything missing, so a fresh
+deployment needs no one-off command. Both steps are idempotent — restarting
+never duplicates or overwrites edited content.
+
+Two things must be on persistent storage, or every deploy loses them:
+
+- `DATABASE_URL` — the SQLite file (`file:/var/data/mykingdom.db`)
+- `UPLOAD_DIR` — the photos (`/var/data/uploads`)
+
+Run it behind nginx, Caddy or a platform proxy with TLS — the session
+cookie is `Secure` in production and will not be sent over plain HTTP.

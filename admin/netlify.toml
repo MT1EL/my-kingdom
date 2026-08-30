@@ -1,0 +1,49 @@
+# ------------------------------------------------------------------
+# Netlify build for the dashboard (the `admin/` app).
+#
+# This is a SECOND Netlify site, pointed at the same repository with the
+# base directory set to `admin`. Keeping it off the public site's domain
+# means none of this code ships to families browsing the site.
+#
+# In Netlify: New site → same repo → Base directory: admin
+# ------------------------------------------------------------------
+
+[build]
+  base = "admin"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# ---- API proxy ----------------------------------------------------
+#
+# ⚠️  Replace API_HOST with the API's real address.
+#
+# The dashboard signs in with an httpOnly cookie. Proxying keeps the
+# browser on one origin, so the cookie is first-party and needs no
+# cross-site exemption — the most reliable arrangement, and the one least
+# likely to be blocked by a browser's tracking protection.
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://API_HOST/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/uploads/*"
+  to = "https://API_HOST/uploads/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# The dashboard must never be indexed.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"

@@ -1,10 +1,14 @@
 # ------------------------------------------------------------------
 # Netlify build for the public site (the `src/` app).
 #
-# Netlify serves static files. It does NOT run `server/` — that is a
-# long-running Node process and needs its own host. Until the API has a
-# public URL, `/api/*` has nothing to answer it and the site shows its
-# "საიტი ვერ ჩაიტვირთა" screen.
+# Netlify serves static files; it does not run `server/`. That is a
+# long-running Node process and lives on its own host (see render.yaml).
+#
+# The two rules below are both required for the deployed site to work:
+#   1. /api and /uploads are proxied to the API,
+#   2. everything else falls back to index.html so React Router can route.
+#
+# Order matters — the catch-all must stay last.
 # ------------------------------------------------------------------
 
 [build]
@@ -14,31 +18,42 @@
 [build.environment]
   NODE_VERSION = "22"
 
-# The site is a single-page app: React Router owns /menu, /programs and the
-# rest. Without this, a direct visit or a refresh on any path but "/" asks
-# Netlify for a file that does not exist and gets a 404.
+# ---- 1. API proxy -------------------------------------------------
 #
-# It must stay the LAST rule — it matches everything, so any /api proxy has
-# to be declared above it.
+# ⚠️  Replace API_HOST below with the API's real address once it is
+# deployed, e.g. "https://mykingdom-api.onrender.com". Until then the site
+# will keep showing its "საიტი ვერ ჩაიტვირთა" screen.
+#
+# Proxying (rather than pointing the site straight at the API host) keeps
+# the browser on one origin: no CORS preflights, and the /uploads paths
+# stored in the database keep working as-is.
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://API_HOST/api/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/uploads/*"
+  to = "https://API_HOST/uploads/:splat"
+  status = 200
+  force = true
+
+# ---- 2. Single-page app fallback ----------------------------------
+#
+# React Router owns /menu, /programs, /gallery and the rest. Without this,
+# a direct visit or a refresh on any path but "/" asks Netlify for a file
+# that does not exist and gets a 404.
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
 
-# ------------------------------------------------------------------
-# Once the API is deployed, uncomment this and put its host in. It proxies
-# /api and /uploads to the API from the site's own domain, which keeps the
-# browser on one origin — no CORS, and relative image paths keep working.
-#
-# [[redirects]]
-#   from = "/api/*"
-#   to = "https://YOUR-API-HOST/api/:splat"
-#   status = 200
-#   force = true
-#
-# [[redirects]]
-#   from = "/uploads/*"
-#   to = "https://YOUR-API-HOST/uploads/:splat"
-#   status = 200
-#   force = true
-# ------------------------------------------------------------------
+# Uploaded photos are content-addressed — a changed photo is a new file, so
+# the old URL can be cached indefinitely.
+[[headers]]
+  for = "/uploads/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
