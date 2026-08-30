@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { ImagePlus, Loader2, Plus, Trash2 } from 'lucide-react'
 import { LucideIcon } from '@/components/resource/LucideIcon'
 import { ACCENTS, ICON_NAMES } from '@shared/icons'
-import { api, type UploadResult } from '@/lib/api'
+import { api, mediaUrl, type UploadResult } from '@/lib/api'
 import { errorMessage } from '@/lib/useResource'
 import { useToast } from '@/components/ui/Toasts'
 import { Button, Field, inputClasses } from '@/components/ui'
@@ -109,7 +109,7 @@ function ImageInput({ value, onChange }: { value: string; onChange: (next: strin
     <div className="flex flex-col gap-3">
       {value && (
         <img
-          src={value}
+          src={mediaUrl(value)}
           alt=""
           className="h-40 w-full rounded-xl border border-royal-100 object-cover"
         />

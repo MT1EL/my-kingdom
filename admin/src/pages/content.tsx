@@ -2,6 +2,7 @@ import type { Activity, Benefit, Extra, GalleryImage, Program } from '@shared/ty
 import { ResourcePage, type ManagedItem, type ResourceConfig } from '@/components/resource/ResourcePage'
 import { LucideIcon } from '@/components/resource/LucideIcon'
 import { Badge } from '@/components/ui'
+import { mediaUrl } from '@/lib/api'
 
 /* ------------------------------------------------------------------
    The content screens.
@@ -58,7 +59,7 @@ const programsConfig: ResourceConfig<ProgramRow> = {
   renderRow: (item) => (
     <div className="flex items-center gap-3">
       {item.image && (
-        <img src={item.image} alt="" className="size-12 shrink-0 rounded-lg object-cover" />
+        <img src={mediaUrl(item.image)} alt="" className="size-12 shrink-0 rounded-lg object-cover" />
       )}
       <div className="min-w-0">
         <p className="flex flex-wrap items-center gap-2 font-semibold text-royal-950">
@@ -221,7 +222,7 @@ const galleryConfig: ResourceConfig<GalleryRow> = {
   ],
   renderRow: (item) => (
     <div className="flex items-center gap-3">
-      <img src={item.src} alt="" className="size-12 shrink-0 rounded-lg object-cover" />
+      <img src={mediaUrl(item.src)} alt="" className="size-12 shrink-0 rounded-lg object-cover" />
       <div className="min-w-0">
         <p className="truncate font-semibold text-royal-950">{item.alt}</p>
         <p className="text-sm text-royal-900/60">

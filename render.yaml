@@ -57,6 +57,11 @@ services:
       # Serve the dashboard from this same origin, at /admin. Same-origin
       # keeps its login cookie first-party, which no browser privacy setting
       # will interfere with.
+      #
+      # Set to "false" if the dashboard is hosted separately — then it is a
+      # cross-site cookie, which needs NODE_ENV=production (so the cookie is
+      # issued SameSite=None; Secure) and the dashboard's origin listed in
+      # CORS_ORIGINS.
       - key: SERVE_ADMIN
         value: "true"
 
@@ -86,11 +91,12 @@ services:
       # email if left unset.
       - key: EMAIL_VENUE_TO
         sync: false
-      # Left unset on purpose: the API falls back to Render's own
-      # RENDER_EXTERNAL_URL + /admin, which is exactly where the dashboard
-      # lives. Set it only if the dashboard moves elsewhere.
-      # - key: DASHBOARD_URL
-      #   sync: false
+      # Where the "open in the dashboard" button in the venue's email
+      # points. Set this when the dashboard is hosted separately (e.g. on
+      # Netlify); left unset, it falls back to this service's own
+      # RENDER_EXTERNAL_URL + /admin.
+      - key: DASHBOARD_URL
+        sync: false
 
       # The public site's origin. The dashboard is same-origin so it needs
       # no entry here.

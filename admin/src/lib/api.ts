@@ -8,7 +8,36 @@ import type { ApiErrorBody } from '@shared/types'
    the session cookie on every call.
 ------------------------------------------------------------------- */
 
-const BASE_URL = import.meta.env?.VITE_API_URL ?? ''
+const RAW_BASE = import.meta.env?.VITE_API_URL ?? ''
+
+/**
+ * The API's origin, normalised.
+ *
+ * Accepts a full URL or a bare hostname, and trims a trailing "/api" —
+ * every path here already starts with it, so pasting the endpoint instead
+ * of the origin would otherwise produce "/api/api/…".
+ */
+export const API_BASE = (() => {
+  if (!RAW_BASE) return ''
+  const withScheme = /^https?:\/\//.test(RAW_BASE) ? RAW_BASE : `https://${RAW_BASE}`
+  return withScheme.replace(/\/+$/, '').replace(/\/api$/, '')
+})()
+
+const BASE_URL = API_BASE
+
+/**
+ * Resolves a stored image path against the API.
+ *
+ * Photos are saved as "/uploads/…", which is correct when the dashboard is
+ * served by the API. Hosted separately, the browser would resolve them
+ * against the dashboard's own origin and show a broken image, so the API's
+ * origin goes back in front. Absolute URLs pass through untouched.
+ */
+export function mediaUrl(src: string): string {
+  if (!src || !API_BASE) return src
+  if (/^(https?:)?\/\//.test(src) || src.startsWith('data:')) return src
+  return src.startsWith('/') ? `${API_BASE}${src}` : src
+}
 
 export class ApiError extends Error {
   readonly status: number

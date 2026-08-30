@@ -1,0 +1,38 @@
+# ------------------------------------------------------------------
+# Netlify build for the dashboard (the `admin/` app).
+#
+# A separate Netlify site pointed at this repository with the base
+# directory set to `admin`.
+#
+# Required environment variable on that site:
+#
+#   VITE_API_URL = https://mykingdom-api.onrender.com
+#
+# The ORIGIN, with no trailing "/api". It is baked into the bundle at build
+# time, so changing it needs a redeploy.
+#
+# The API must also list this site's URL in CORS_ORIGINS, and run with
+# NODE_ENV=production so the session cookie is issued as
+# `SameSite=None; Secure` — without that the browser will not send it back
+# to another origin and every request after login looks signed out.
+# ------------------------------------------------------------------
+
+[build]
+  base = "admin"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# React Router owns /bookings, /programs and the rest.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# The dashboard must never be indexed.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
