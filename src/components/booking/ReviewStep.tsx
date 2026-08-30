@@ -1,9 +1,7 @@
 import { CalendarDays, Clock, Info, PartyPopper, Sparkles, User, Users } from 'lucide-react'
 import type { BookingDraft } from '@/types'
-import { getProgram } from '@/data/programs'
-import { getExtra } from '@/data/extras'
+import { useProgram, useSelectedExtras, useSite } from '@/content'
 import { formatDateWithYear, formatLongDate } from '@/lib/date'
-import { site } from '@/data/site'
 
 interface ReviewStepProps {
   draft: BookingDraft
@@ -41,8 +39,9 @@ function Row({ icon: RowIcon, label, value, step, onEdit }: RowProps) {
 }
 
 export function ReviewStep({ draft, onEdit, error }: ReviewStepProps) {
-  const program = getProgram(draft.programId)
-  const chosenExtras = draft.extraIds.map(getExtra).filter(Boolean)
+  const program = useProgram(draft.programId)
+  const chosenExtras = useSelectedExtras(draft.extraIds)
+  const site = useSite()
 
   return (
     <div className="flex flex-col gap-6">
@@ -81,7 +80,7 @@ export function ReviewStep({ draft, onEdit, error }: ReviewStepProps) {
           label="დამატებითი სერვისები"
           value={
             chosenExtras.length
-              ? chosenExtras.map((extra) => extra!.title).join(', ')
+              ? chosenExtras.map((extra) => extra.title).join(', ')
               : 'არ არის არჩეული'
           }
           step={4}

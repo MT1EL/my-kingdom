@@ -11,7 +11,7 @@ import {
 } from '@/lib/date'
 import { fetchMonthAvailability, getFirstBookableDate, getLastBookableDate } from '@/lib/api'
 import { cn } from '@/lib/cn'
-import { site } from '@/data/site'
+import { useSite } from '@/content'
 
 interface DateStepProps {
   value: ISODate | null
@@ -19,8 +19,11 @@ interface DateStepProps {
 }
 
 export function DateStep({ value, onChange }: DateStepProps) {
-  const first = useMemo(() => getFirstBookableDate(), [])
-  const last = useMemo(() => getLastBookableDate(), [])
+  const site = useSite()
+  const { booking } = site
+
+  const first = useMemo(() => getFirstBookableDate(booking), [booking])
+  const last = useMemo(() => getLastBookableDate(booking), [booking])
 
   const [month, setMonth] = useState(() =>
     value ? new Date(`${value}T12:00:00`) : new Date(first.getFullYear(), first.getMonth(), 1),
@@ -28,19 +31,28 @@ export function DateStep({ value, onChange }: DateStepProps) {
   const [availability, setAvailability] = useState<Record<ISODate, DayAvailability>>({})
   const [loading, setLoading] = useState(true)
 
+  const [failed, setFailed] = useState(false)
+
   useEffect(() => {
-    let cancelled = false
+    const controller = new AbortController()
     setLoading(true)
-    fetchMonthAvailability(month)
+    setFailed(false)
+
+    fetchMonthAvailability(month, controller.signal)
       .then((data) => {
-        if (!cancelled) setAvailability(data)
+        setAvailability(data)
+        setLoading(false)
       })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        // Every day renders as unavailable rather than as bookable — better to
+        // ask a family to retry than to take a booking we cannot honour.
+        setAvailability({})
+        setFailed(true)
+        setLoading(false)
       })
-    return () => {
-      cancelled = true
-    }
+
+    return () => controller.abort()
   }, [month])
 
   const cells = useMemo(() => buildMonthGrid(month), [month])
@@ -134,6 +146,15 @@ export function DateStep({ value, onChange }: DateStepProps) {
           })}
         </div>
 
+        {failed && (
+          <p
+            role="alert"
+            className="mt-5 rounded-2xl border border-candy-300 bg-candy-50 p-3 text-sm font-semibold text-candy-800"
+          >
+            კალენდარი ვერ ჩაიტვირთა. შეამოწმეთ ინტერნეტი და სცადეთ თავიდან.
+          </p>
+        )}
+
         <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-royal-100 pt-4 text-xs text-royal-900/60">
           <span className="flex items-center gap-1.5">
             <span className="size-2 rounded-full bg-mint-500" /> თავისუფალია
@@ -147,8 +168,8 @@ export function DateStep({ value, onChange }: DateStepProps) {
       <p className="flex items-start gap-3 rounded-3xl border border-royal-100 bg-royal-50/70 p-4 text-sm leading-relaxed text-royal-900/70">
         <Info className="mt-0.5 size-5 shrink-0 text-royal-500" />
         <span>
-          ხელმისაწვდომობა საჩვენებელი მონაცემებია — ზუსტ თარიღსა და დროს ჯავშნის დადასტურებისას
-          ერთად შევათანხმებთ.
+          თარიღის არჩევა ჯავშანს ჯერ არ ადასტურებს — მოთხოვნის მიღების შემდეგ დაგიკავშირდებით
+          და დროს ერთად შევათანხმებთ.
         </span>
       </p>
     </div>

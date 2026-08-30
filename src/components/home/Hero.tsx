@@ -2,7 +2,7 @@ import { CalendarHeart, Gamepad2, MicVocal, PartyPopper, Sparkles } from 'lucide
 import { Container } from '@/components/ui/Container'
 import { LinkButton } from '@/components/ui/Button'
 import { SmartImage } from '@/components/ui/SmartImage'
-import { site } from '@/data/site'
+import { useSite } from '@/content'
 
 const chips = [
   { icon: PartyPopper, label: 'ანიმატორები' },
@@ -15,6 +15,8 @@ const img = (id: string, w: number) =>
   `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=80`
 
 export function Hero() {
+  const site = useSite()
+
   return (
     <section className="relative overflow-hidden pb-16 pt-28 sm:pb-24 sm:pt-36 lg:pb-32 lg:pt-44">
       {/* Ambient background */}
@@ -60,7 +62,7 @@ export function Hero() {
             </h1>
 
             <p className="mt-7 max-w-xl text-pretty text-base leading-relaxed text-royal-900/70 sm:text-lg">
-              „ჩემი სამეფო" არის სივრცე, სადაც დაბადების დღე მთელ თავგადასავლად იქცევა — თემატური
+              „ჩემი სამეფო“ არის სივრცე, სადაც დაბადების დღე მთელ თავგადასავლად იქცევა — თემატური
               პროგრამები, ანიმატორები, თამაშები, კარაოკე, Xbox, მუსიკა და ფოტოზონები ერთ ადგილას.
             </p>
 

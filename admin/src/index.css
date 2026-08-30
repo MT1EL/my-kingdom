@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------
+   Dashboard tokens.
+
+   The same palette as the public site so the two feel related, but a
+   cooler, denser scale: this is a tool the owner works in, not a page
+   that has to delight a visitor.
+------------------------------------------------------------------- */
+@theme {
+  --font-sans: "Noto Sans Georgian", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Noto Sans Georgian", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --color-royal-50: #faf6fd;
+  --color-royal-100: #f3ebfa;
+  --color-royal-200: #e8d8f5;
+  --color-royal-300: #d6b8ec;
+  --color-royal-400: #bd8ede;
+  --color-royal-500: #a166cb;
+  --color-royal-600: #8747b0;
+  --color-royal-700: #70378f;
+  --color-royal-800: #5c3075;
+  --color-royal-900: #4c2a60;
+  --color-royal-950: #2f143f;
+
+  --color-candy-100: #fbe8f6;
+  --color-candy-200: #f9d0ee;
+  --color-candy-500: #e24bb3;
+  --color-candy-600: #cd2b94;
+  --color-candy-700: #b01e78;
+  --color-candy-800: #911c63;
+
+  --color-mint-100: #d6fae9;
+  --color-mint-200: #b0f3d6;
+  --color-mint-500: #1cb884;
+  --color-mint-600: #10946c;
+  --color-mint-700: #0f7659;
+
+  --color-sun-100: #fff2c6;
+  --color-sun-200: #ffe388;
+  --color-sun-500: #f99b07;
+  --color-sun-700: #b75006;
+  --color-sun-800: #943e0c;
+
+  --color-slate-25: #fbfbfd;
+
+  --shadow-panel: 0 1px 2px -1px rgb(47 20 63 / 0.08), 0 8px 24px -12px rgb(47 20 63 / 0.14);
+}
+
+@layer base {
+  body {
+    background-color: #f6f5f8;
+    color: var(--color-royal-950);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Georgian has no uppercase — never let a utility fake it. */
+  * { text-transform: none !important; }
+
+  :focus-visible {
+    outline: 2px solid var(--color-royal-500);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+}
+
+@utility text-pretty { text-wrap: pretty; }
+@utility text-balance { text-wrap: balance; }
+
+/* Hides the number-input spinners; quantity fields read better without them. */
+@utility no-spinner {
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+  }
+  appearance: textfield;
+}

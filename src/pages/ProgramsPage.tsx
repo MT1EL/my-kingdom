@@ -5,8 +5,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { Reveal } from '@/components/ui/Reveal'
 import { LinkButton } from '@/components/ui/Button'
 import { ProgramCard } from '@/components/programs/ProgramCard'
-import { programs } from '@/data/programs'
-import { site } from '@/data/site'
+import { usePrograms, useSite } from '@/content'
 import { usePageMeta } from '@/lib/usePageMeta'
 import { cn } from '@/lib/cn'
 
@@ -24,12 +23,15 @@ export default function ProgramsPage() {
     'თემატური დაბადების დღის პროგრამები: პრინცესების ბალი, სუპერგმირები, კარაოკე, გეიმერების ტურნირი, დისკო, ხელოვნების სახელოსნო და სხვა.',
   )
 
+  const programs = usePrograms()
+  const site = useSite()
+
   const [filter, setFilter] = useState<(typeof ageFilters)[number]['id']>('all')
 
   const visible = useMemo(() => {
     const active = ageFilters.find((option) => option.id === filter) ?? ageFilters[0]
     return programs.filter((program) => active.test(program.ageMin, program.ageMax))
-  }, [filter])
+  }, [filter, programs])
 
   return (
     <>

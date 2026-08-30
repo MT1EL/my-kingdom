@@ -1,8 +1,7 @@
 import { Check } from 'lucide-react'
-import { extras } from '@/data/extras'
+import { useExtras, useSite } from '@/content'
 import { Icon } from '@/components/ui/Icon'
 import { cn } from '@/lib/cn'
-import { site } from '@/data/site'
 
 interface ExtrasStepProps {
   value: string[]
@@ -10,6 +9,9 @@ interface ExtrasStepProps {
 }
 
 export function ExtrasStep({ value, onChange }: ExtrasStepProps) {
+  const extras = useExtras()
+  const site = useSite()
+
   const toggle = (id: string) =>
     onChange(value.includes(id) ? value.filter((item) => item !== id) : [...value, id])
 

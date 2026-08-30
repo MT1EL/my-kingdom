@@ -14,7 +14,8 @@ import { ReviewStep } from '@/components/booking/ReviewStep'
 import { BookingSummary } from '@/components/booking/BookingSummary'
 import { Confirmation } from '@/components/booking/Confirmation'
 import { submitBookingRequest } from '@/lib/api'
-import { getProgram } from '@/data/programs'
+import { ApiError } from '@/lib/http'
+import { usePrograms, useSite } from '@/content'
 import { hasErrors, validateDetails } from '@/lib/validation'
 import type { BookingDraft, BookingRequestResult, FieldErrors } from '@/types'
 import { usePageMeta } from '@/lib/usePageMeta'
@@ -48,12 +49,14 @@ export default function BookingPage() {
     'აირჩიეთ თარიღი, დრო და პროგრამა და გამოგვიგზავნეთ ჯავშნის მოთხოვნა — დაგიკავშირდებით დეტალების შესათანხმებლად.',
   )
 
+  const programs = usePrograms()
+  const site = useSite()
   const [searchParams, setSearchParams] = useSearchParams()
   const preselected = searchParams.get('program')
 
   const [draft, setDraft] = useState<BookingDraft>(() => ({
     ...emptyDraft,
-    programId: getProgram(preselected)?.id ?? null,
+    programId: programs.some((program) => program.id === preselected) ? preselected : null,
   }))
   const [step, setStep] = useState(1)
   const [maxReached, setMaxReached] = useState(1)
@@ -68,14 +71,13 @@ export default function BookingPage() {
   /** A ?program= id is consumed once, then dropped so the URL stays clean. */
   useEffect(() => {
     if (!preselected) return
-    const program = getProgram(preselected)
-    if (program) {
-      setDraft((current) => ({ ...current, programId: program.id }))
+    if (programs.some((program) => program.id === preselected)) {
+      setDraft((current) => ({ ...current, programId: preselected }))
     }
     const next = new URLSearchParams(searchParams)
     next.delete('program')
     setSearchParams(next, { replace: true })
-  }, [preselected, searchParams, setSearchParams])
+  }, [preselected, programs, searchParams, setSearchParams])
 
   /** Keep the active step in view when navigating between them. */
   useEffect(() => {
@@ -118,7 +120,7 @@ export default function BookingPage() {
 
   const handleNext = () => {
     if (step === 5) {
-      const found = validateDetails(draft)
+      const found = validateDetails(draft, site.booking.maxChildren)
       setErrors(found)
       if (hasErrors(found)) {
         // Focus the first field that failed so the error is not missed.
@@ -135,7 +137,7 @@ export default function BookingPage() {
   }
 
   const handleSubmit = async () => {
-    const found = validateDetails(draft)
+    const found = validateDetails(draft, site.booking.maxChildren)
     setErrors(found)
     if (hasErrors(found) || !draft.date || !draft.time || !draft.programId) {
       setSubmitError('ზოგიერთი ველი არასწორადაა შევსებული — გთხოვთ, შეამოწმოთ დეტალების ნაბიჯი.')
@@ -152,8 +154,23 @@ export default function BookingPage() {
         programId: draft.programId,
       })
       setResult(response)
-    } catch {
-      setSubmitError('მოთხოვნის გაგზავნა ვერ მოხერხდა. სცადეთ ხელახლა ან დაგვიკავშირდით Facebook-ზე.')
+    } catch (error: unknown) {
+      // The API's own message is the useful one — it says whether the slot was
+      // taken, a field was rejected, or the request never arrived.
+      if (error instanceof ApiError) {
+        setSubmitError(error.message)
+        if (Object.keys(error.fields).length > 0) {
+          setErrors(error.fields as FieldErrors<BookingDraft>)
+        }
+        // A slot lost between choosing and sending is fixed on the time step.
+        if (error.code === 'SLOT_UNAVAILABLE' || error.code === 'DAY_CLOSED') {
+          setStep(error.code === 'DAY_CLOSED' ? 1 : 2)
+        }
+      } else {
+        setSubmitError(
+          'მოთხოვნის გაგზავნა ვერ მოხერხდა. სცადეთ ხელახლა ან დაგვიკავშირდით Facebook-ზე.',
+        )
+      }
     } finally {
       setSubmitting(false)
     }

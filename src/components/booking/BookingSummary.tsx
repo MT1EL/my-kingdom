@@ -1,7 +1,6 @@
 import { CalendarDays, Clock, PartyPopper, Sparkles, Users } from 'lucide-react'
 import type { BookingDraft } from '@/types'
-import { getProgram } from '@/data/programs'
-import { getExtra } from '@/data/extras'
+import { useProgram, useSelectedExtras } from '@/content'
 import { formatDateWithYear } from '@/lib/date'
 import { SmartImage } from '@/components/ui/SmartImage'
 
@@ -30,10 +29,9 @@ function Line({ icon: LineIcon, label, value }: LineProps) {
 }
 
 export function BookingSummary({ draft }: BookingSummaryProps) {
-  const program = getProgram(draft.programId)
-  const extraTitles = draft.extraIds
-    .map((id) => getExtra(id)?.title)
-    .filter(Boolean)
+  const program = useProgram(draft.programId)
+  const extraTitles = useSelectedExtras(draft.extraIds)
+    .map((extra) => extra.title)
     .join(', ')
 
   return (

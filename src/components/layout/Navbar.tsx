@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { CalendarHeart, Menu, X } from 'lucide-react'
 import { cn } from '@/lib/cn'
-import { navLinks, site } from '@/data/site'
+import { navLinks } from '@/data/nav'
+import { useSite } from '@/content'
 import { Container } from '@/components/ui/Container'
 import { LinkButton } from '@/components/ui/Button'
 
 export function Navbar() {
+  const site = useSite()
   const [scrolled, setScrolled] = useState(false)
   const [open, setOpen] = useState(false)
   const location = useLocation()

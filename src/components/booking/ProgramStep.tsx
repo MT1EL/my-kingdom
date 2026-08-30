@@ -1,5 +1,5 @@
 import { Check, Clock, Users } from 'lucide-react'
-import { programs } from '@/data/programs'
+import { usePrograms } from '@/content'
 import { SmartImage } from '@/components/ui/SmartImage'
 import { formatDuration } from '@/lib/date'
 import { cn } from '@/lib/cn'
@@ -10,6 +10,8 @@ interface ProgramStepProps {
 }
 
 export function ProgramStep({ value, onChange }: ProgramStepProps) {
+  const programs = usePrograms()
+
   return (
     <div className="flex flex-col gap-6">
       <header>

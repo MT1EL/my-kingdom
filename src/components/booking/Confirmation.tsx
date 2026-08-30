@@ -2,11 +2,10 @@ import { Link } from 'react-router-dom'
 import { CalendarDays, CircleCheckBig, Clock, Copy, PartyPopper, Phone } from 'lucide-react'
 import { useState } from 'react'
 import type { BookingDraft, BookingRequestResult } from '@/types'
-import { getProgram } from '@/data/programs'
+import { useProgram, useSite } from '@/content'
 import { formatDateWithYear } from '@/lib/date'
 import { LinkButton, Button, AnchorButton } from '@/components/ui/Button'
 import { FacebookIcon } from '@/components/ui/SocialIcons'
-import { site } from '@/data/site'
 
 interface ConfirmationProps {
   draft: BookingDraft
@@ -15,7 +14,8 @@ interface ConfirmationProps {
 }
 
 export function Confirmation({ draft, result, onReset }: ConfirmationProps) {
-  const program = getProgram(draft.programId)
+  const program = useProgram(draft.programId)
+  const site = useSite()
   const [copied, setCopied] = useState(false)
 
   const copyReference = async () => {
@@ -95,15 +95,17 @@ export function Confirmation({ draft, result, onReset }: ConfirmationProps) {
         <Button variant="outline" onClick={onReset}>
           ახალი მოთხოვნის გაგზავნა
         </Button>
-        <AnchorButton
-          href={site.social.facebook}
-          target="_blank"
-          rel="noreferrer noopener"
-          variant="outline"
-        >
-          <FacebookIcon className="size-4" />
-          დაგვიკავშირდი
-        </AnchorButton>
+        {site.social.facebook && (
+          <AnchorButton
+            href={site.social.facebook}
+            target="_blank"
+            rel="noreferrer noopener"
+            variant="outline"
+          >
+            <FacebookIcon className="size-4" />
+            დაგვიკავშირდი
+          </AnchorButton>
+        )}
       </div>
 
       <p className="mt-6 text-sm text-royal-900/55">

@@ -1,5 +1,4 @@
 import type { BookingDraft, FieldErrors } from '@/types'
-import { site } from '@/data/site'
 
 /** Georgian mobile numbers, with or without the +995 prefix and spacing. */
 const PHONE_RE = /^(\+?995)?[\s-]?5\d{2}[\s-]?\d{2}[\s-]?\d{2}[\s-]?\d{2}$/
@@ -11,8 +10,16 @@ export function normalisePhone(value: string): string {
   return value.replace(/[\s()-]/g, '')
 }
 
-/** Validates the "parent & child details" step. Email is optional. */
-export function validateDetails(draft: BookingDraft): FieldErrors<BookingDraft> {
+/**
+ * Validates the "parent & child details" step. Email is optional.
+ *
+ * `maxChildren` is a venue setting, so it is passed in rather than imported —
+ * the server enforces the same limit when the request is submitted.
+ */
+export function validateDetails(
+  draft: BookingDraft,
+  maxChildren: number,
+): FieldErrors<BookingDraft> {
   const errors: FieldErrors<BookingDraft> = {}
 
   if (!draft.childName.trim()) {
@@ -35,9 +42,9 @@ export function validateDetails(draft: BookingDraft): FieldErrors<BookingDraft> 
     !Number.isFinite(count) ||
     !Number.isInteger(count) ||
     count < 1 ||
-    count > site.booking.maxChildren
+    count > maxChildren
   ) {
-    errors.childrenCount = `რაოდენობა უნდა იყოს 1-დან ${site.booking.maxChildren}-მდე`
+    errors.childrenCount = `რაოდენობა უნდა იყოს 1-დან ${maxChildren}-მდე`
   }
 
   if (!draft.parentName.trim()) {

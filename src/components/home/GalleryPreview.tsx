@@ -5,7 +5,7 @@ import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Reveal } from '@/components/ui/Reveal'
 import { SmartImage } from '@/components/ui/SmartImage'
 import { LinkButton } from '@/components/ui/Button'
-import { galleryPreview } from '@/data/gallery'
+import { useGalleryPreview } from '@/content'
 import { cn } from '@/lib/cn'
 
 /** Layout pattern for the 8-image preview mosaic (index → grid span classes). */
@@ -21,6 +21,8 @@ const spans = [
 ]
 
 export function GalleryPreview() {
+  const galleryPreview = useGalleryPreview(spans.length)
+
   return (
     <section className="py-20 sm:py-28">
       <Container size="wide">

@@ -1,12 +1,14 @@
 import { Link } from 'react-router-dom'
 import { Clock, Mail, MapPin, Phone } from 'lucide-react'
-import { navLinks, site } from '@/data/site'
+import { navLinks } from '@/data/nav'
+import { useSite } from '@/content'
 import { Container } from '@/components/ui/Container'
 import { ContactValue } from '@/components/ui/ContactValue'
 import { FacebookIcon, InstagramIcon } from '@/components/ui/SocialIcons'
 import { LinkButton } from '@/components/ui/Button'
 
 export function Footer() {
+  const site = useSite()
   const year = new Date().getFullYear()
 
   return (
@@ -41,15 +43,17 @@ export function Footer() {
             </p>
 
             <div className="mt-6 flex items-center gap-3">
-              <a
-                href={site.social.facebook}
-                target="_blank"
-                rel="noreferrer noopener"
-                aria-label="Facebook გვერდი"
-                className="grid size-11 place-items-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
-              >
-                <FacebookIcon className="size-5" />
-              </a>
+              {site.social.facebook && (
+                <a
+                  href={site.social.facebook}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  aria-label="Facebook გვერდი"
+                  className="grid size-11 place-items-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+                >
+                  <FacebookIcon className="size-5" />
+                </a>
+              )}
               {site.social.instagram && (
                 <a
                   href={site.social.instagram}

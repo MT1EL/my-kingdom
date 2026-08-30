@@ -6,12 +6,12 @@ import { Reveal } from '@/components/ui/Reveal'
 import { SmartImage } from '@/components/ui/SmartImage'
 import { LinkButton } from '@/components/ui/Button'
 import { Lightbox } from '@/components/gallery/Lightbox'
-import { galleryCategories, galleryImages } from '@/data/gallery'
-import type { GalleryCategory } from '@/types'
+import { useGallery, useGalleryCategories } from '@/content'
+import type { GalleryCategory, GalleryImage } from '@/types'
 import { usePageMeta } from '@/lib/usePageMeta'
 import { cn } from '@/lib/cn'
 
-const spanClasses: Record<NonNullable<(typeof galleryImages)[number]['span']>, string> = {
+const spanClasses: Record<GalleryImage['span'], string> = {
   tall: 'row-span-2',
   wide: 'sm:col-span-2',
   normal: '',
@@ -23,6 +23,9 @@ export default function GalleryPage() {
     'ფოტოები ჩვენი ზეიმებიდან: აქტივობები, ფოტოზონები, დეკორაცია და ტორტები.',
   )
 
+  const galleryImages = useGallery()
+  const galleryCategories = useGalleryCategories()
+
   const [category, setCategory] = useState<GalleryCategory | 'all'>('all')
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
@@ -31,7 +34,7 @@ export default function GalleryPage() {
       category === 'all'
         ? galleryImages
         : galleryImages.filter((image) => image.category === category),
-    [category],
+    [category, galleryImages],
   )
 
   return (
@@ -71,7 +74,7 @@ export default function GalleryPage() {
               <Reveal
                 key={image.id}
                 delay={(index % 4) * 60}
-                className={cn('h-full', image.span ? spanClasses[image.span] : '')}
+                className={cn('h-full', spanClasses[image.span])}
               >
                 <button
                   type="button"

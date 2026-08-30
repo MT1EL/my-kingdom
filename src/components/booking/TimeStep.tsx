@@ -14,20 +14,27 @@ interface TimeStepProps {
 export function TimeStep({ date, value, onChange }: TimeStepProps) {
   const [day, setDay] = useState<DayAvailability | null>(null)
   const [loading, setLoading] = useState(true)
+  const [failed, setFailed] = useState(false)
 
   useEffect(() => {
-    let cancelled = false
+    const controller = new AbortController()
     setLoading(true)
-    fetchDayAvailability(date)
+    setFailed(false)
+
+    fetchDayAvailability(date, controller.signal)
       .then((data) => {
-        if (!cancelled) setDay(data)
+        setDay(data)
+        setLoading(false)
       })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        // No slots rather than stale ones — never offer a time we cannot check.
+        setDay(null)
+        setFailed(true)
+        setLoading(false)
       })
-    return () => {
-      cancelled = true
-    }
+
+    return () => controller.abort()
   }, [date])
 
   return (
@@ -45,6 +52,15 @@ export function TimeStep({ date, value, onChange }: TimeStepProps) {
           <Loader2 className="size-5 animate-spin text-royal-500" />
           ვამოწმებთ თავისუფალ დროს…
         </div>
+      )}
+
+      {!loading && failed && (
+        <p
+          role="alert"
+          className="rounded-3xl border border-candy-300 bg-candy-50 p-4 text-sm font-semibold text-candy-800"
+        >
+          თავისუფალი დროის შემოწმება ვერ მოხერხდა. სცადეთ თავიდან.
+        </p>
       )}
 
       {!loading && day && (

@@ -2,10 +2,12 @@ import { Container } from '@/components/ui/Container'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Reveal } from '@/components/ui/Reveal'
 import { Icon } from '@/components/ui/Icon'
-import { activities } from '@/data/activities'
+import { useActivities } from '@/content'
 import { cn } from '@/lib/cn'
 
 export function Activities() {
+  const activities = useActivities()
+
   return (
     <section className="relative overflow-hidden py-20 sm:py-28">
       <div

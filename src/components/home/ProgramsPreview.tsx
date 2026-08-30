@@ -4,9 +4,12 @@ import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Reveal } from '@/components/ui/Reveal'
 import { LinkButton } from '@/components/ui/Button'
 import { ProgramCard } from '@/components/programs/ProgramCard'
-import { featuredPrograms, programs } from '@/data/programs'
+import { useFeaturedPrograms, usePrograms } from '@/content'
 
 export function ProgramsPreview() {
+  const featuredPrograms = useFeaturedPrograms()
+  const programs = usePrograms()
+
   return (
     <section className="relative overflow-hidden bg-white py-20 sm:py-28">
       <div

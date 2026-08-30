@@ -3,10 +3,12 @@ import { Container } from '@/components/ui/Container'
 import { Reveal } from '@/components/ui/Reveal'
 import { LinkButton, AnchorButton } from '@/components/ui/Button'
 import { SmartImage } from '@/components/ui/SmartImage'
-import { site } from '@/data/site'
+import { useSite } from '@/content'
 import { FacebookIcon } from '@/components/ui/SocialIcons'
 
 export function BookingCta() {
+  const site = useSite()
+
   return (
     <section className="pb-20 sm:pb-28">
       <Container size="wide">
@@ -45,16 +47,18 @@ export function BookingCta() {
                   <MapPin className="size-5" />
                   სად ვართ
                 </LinkButton>
-                <AnchorButton
-                  href={site.social.facebook}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  size="lg"
-                  className="border-2 border-white/40 bg-transparent shadow-none hover:bg-white/10"
-                >
-                  <FacebookIcon className="size-5" />
-                  Facebook
-                </AnchorButton>
+                {site.social.facebook && (
+                  <AnchorButton
+                    href={site.social.facebook}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    size="lg"
+                    className="border-2 border-white/40 bg-transparent shadow-none hover:bg-white/10"
+                  >
+                    <FacebookIcon className="size-5" />
+                    Facebook
+                  </AnchorButton>
+                )}
               </div>
             </div>
 

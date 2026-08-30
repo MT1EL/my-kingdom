@@ -1,6 +1,6 @@
 import type { BookingDraft, FieldErrors } from '@/types'
 import { Field, inputClasses } from '@/components/booking/Field'
-import { site } from '@/data/site'
+import { useSite } from '@/content'
 
 interface DetailsStepProps {
   draft: BookingDraft
@@ -9,6 +9,8 @@ interface DetailsStepProps {
 }
 
 export function DetailsStep({ draft, errors, onChange }: DetailsStepProps) {
+  const site = useSite()
+
   return (
     <div className="flex flex-col gap-6">
       <header>

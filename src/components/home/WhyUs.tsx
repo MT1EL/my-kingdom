@@ -2,11 +2,13 @@ import { Container } from '@/components/ui/Container'
 import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Reveal } from '@/components/ui/Reveal'
 import { Icon } from '@/components/ui/Icon'
-import { benefits } from '@/data/activities'
+import { useBenefits, useSite } from '@/content'
 import { LinkButton } from '@/components/ui/Button'
-import { site } from '@/data/site'
 
 export function WhyUs() {
+  const benefits = useBenefits()
+  const site = useSite()
+
   return (
     <section className="relative overflow-hidden bg-royal-950 py-20 text-white sm:py-28">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">

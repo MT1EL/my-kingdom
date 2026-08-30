@@ -5,10 +5,12 @@ import { Reveal } from '@/components/ui/Reveal'
 import { AnchorButton, LinkButton } from '@/components/ui/Button'
 import { ContactValue } from '@/components/ui/ContactValue'
 import { FacebookIcon } from '@/components/ui/SocialIcons'
-import { mapDirectionsUrl, mapEmbedUrl, site } from '@/data/site'
+import { mapDirectionsUrl, mapEmbedUrl, useSite } from '@/content'
 import { usePageMeta } from '@/lib/usePageMeta'
 
 export default function LocationPage() {
+  const site = useSite()
+
   usePageMeta(
     'მდებარეობა და კონტაქტი — ჩემი სამეფო',
     'როგორ მოგვაგნოთ, სამუშაო საათები და საკონტაქტო ინფორმაცია.',
@@ -105,7 +107,7 @@ export default function LocationPage() {
 
               <div className="flex flex-col gap-3 sm:flex-row">
                 <AnchorButton
-                  href={mapDirectionsUrl}
+                  href={mapDirectionsUrl(site)}
                   target="_blank"
                   rel="noreferrer noopener"
                   variant="outline"
@@ -114,16 +116,18 @@ export default function LocationPage() {
                   <Navigation className="size-4" />
                   მარშრუტის აგება
                 </AnchorButton>
-                <AnchorButton
-                  href={site.social.facebook}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  variant="outline"
-                  className="flex-1"
-                >
-                  <FacebookIcon className="size-4" />
-                  Facebook
-                </AnchorButton>
+                {site.social.facebook && (
+                  <AnchorButton
+                    href={site.social.facebook}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    <FacebookIcon className="size-4" />
+                    Facebook
+                  </AnchorButton>
+                )}
               </div>
 
               <LinkButton to="/booking" size="lg">
@@ -137,7 +141,7 @@ export default function LocationPage() {
               <div className="overflow-hidden rounded-4xl border border-royal-100 bg-white shadow-soft">
                 <iframe
                   title={`${site.name} — რუკა`}
-                  src={mapEmbedUrl}
+                  src={mapEmbedUrl(site)}
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
                   className="h-[22rem] w-full border-0 sm:h-[30rem] lg:h-full lg:min-h-[34rem]"
