@@ -1,5 +1,5 @@
 import { asc, eq, inArray, sql } from 'drizzle-orm'
-import type { SQLiteColumn, SQLiteTable } from 'drizzle-orm/sqlite-core'
+import type { PgColumn, PgTable } from 'drizzle-orm/pg-core'
 import { Router } from 'express'
 import type { ZodType } from 'zod'
 import { db } from '../../db/client.ts'
@@ -23,7 +23,7 @@ import { reorderSchema } from '../../lib/validators.ts'
 /** The shape every content table shares — what the factory relies on. */
 type ContentRow = { id: string; sortOrder: number; published: boolean }
 
-export interface ResourceConfig<TTable extends SQLiteTable, TCreate, TUpdate> {
+export interface ResourceConfig<TTable extends PgTable, TCreate, TUpdate> {
   /** Drizzle table. Must have a text `id` and an integer `sort_order`. */
   table: TTable
   createSchema: ZodType<TCreate>
@@ -45,13 +45,13 @@ export interface ResourceConfig<TTable extends SQLiteTable, TCreate, TUpdate> {
  * Drizzle cannot express "any table with these columns" generically, so the
  * cast is confined here rather than spread through every query below.
  */
-const col = (table: SQLiteTable, name: 'id' | 'sortOrder' | 'updatedAt'): SQLiteColumn =>
-  (table as unknown as Record<string, SQLiteColumn>)[name]!
+const col = (table: PgTable, name: 'id' | 'sortOrder' | 'updatedAt'): PgColumn =>
+  (table as unknown as Record<string, PgColumn>)[name]!
 
 const nowISO = () => new Date().toISOString()
 
 /** Ensures a create never overwrites an existing row through a colliding id. */
-async function uniqueId(table: SQLiteTable, base: string): Promise<string> {
+async function uniqueId(table: PgTable, base: string): Promise<string> {
   let candidate = base
   for (let attempt = 2; attempt < 100; attempt += 1) {
     const existing = await db
@@ -67,7 +67,7 @@ async function uniqueId(table: SQLiteTable, base: string): Promise<string> {
 }
 
 /** Appends new rows after everything that already exists. */
-async function nextSortOrder(table: SQLiteTable): Promise<number> {
+async function nextSortOrder(table: PgTable): Promise<number> {
   const rows = await db
     .select({ max: sql<number | null>`max(${col(table, 'sortOrder')})` })
     .from(table)
@@ -75,11 +75,14 @@ async function nextSortOrder(table: SQLiteTable): Promise<number> {
   return (rows[0]?.max ?? -1) + 1
 }
 
-export function resourceRouter<TTable extends SQLiteTable, TCreate, TUpdate>(
+export function resourceRouter<TTable extends PgTable, TCreate, TUpdate>(
   config: ResourceConfig<TTable, TCreate, TUpdate>,
 ): Router {
   const router: Router = Router()
-  const { table } = config
+
+  // Drizzle's query builders cannot accept a generic table parameter, so it
+  // is widened once here. The generic still types `serialize` for the caller.
+  const table = config.table as PgTable
 
   type Row = TTable['$inferSelect'] & ContentRow
 
@@ -130,7 +133,7 @@ export function resourceRouter<TTable extends SQLiteTable, TCreate, TUpdate>(
         columns.sortOrder = await nextSortOrder(table)
       }
 
-      await db.insert(table).values(columns as TTable['$inferInsert'])
+      await db.insert(table).values(columns)
       const row = await findOne(id)
       res.status(201).json(config.serialize(row))
     }),
@@ -150,7 +153,7 @@ export function resourceRouter<TTable extends SQLiteTable, TCreate, TUpdate>(
       delete columns.id
       columns.updatedAt = nowISO()
 
-      await db.update(table).set(columns as Partial<TTable['$inferInsert']>).where(eq(col(table, 'id'), id))
+      await db.update(table).set(columns).where(eq(col(table, 'id'), id))
       const row = await findOne(id)
       res.json(config.serialize(row))
     }),
@@ -187,7 +190,7 @@ export function resourceRouter<TTable extends SQLiteTable, TCreate, TUpdate>(
         for (const [index, id] of ids.entries()) {
           await tx
             .update(table)
-            .set({ sortOrder: index, updatedAt: timestamp } as Partial<TTable['$inferInsert']>)
+            .set({ sortOrder: index, updatedAt: timestamp })
             .where(eq(col(table, 'id'), id))
         }
       })

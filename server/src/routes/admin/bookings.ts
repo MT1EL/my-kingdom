@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, like, lte, or, sql, type SQL } from 'drizzle-orm'
+import { and, desc, eq, gte, ilike, lte, or, sql, type SQL } from 'drizzle-orm'
 import { Router } from 'express'
 import { db, schema } from '../../db/client.ts'
 import { ApiError, param, route } from '../../lib/http.ts'
@@ -28,10 +28,10 @@ bookingsAdminRouter.get(
     if (query.q) {
       const term = `%${query.q}%`
       const search = or(
-        like(schema.bookings.reference, term),
-        like(schema.bookings.parentName, term),
-        like(schema.bookings.childName, term),
-        like(schema.bookings.phone, term),
+        ilike(schema.bookings.reference, term),
+        ilike(schema.bookings.parentName, term),
+        ilike(schema.bookings.childName, term),
+        ilike(schema.bookings.phone, term),
       )
       if (search) filters.push(search)
     }
@@ -46,7 +46,10 @@ bookingsAdminRouter.get(
         .orderBy(desc(schema.bookings.date), desc(schema.bookings.createdAt))
         .limit(query.limit)
         .offset(query.offset),
-      db.select({ count: sql<number>`count(*)` }).from(schema.bookings).where(where),
+      // `count(*)` is a bigint, which the driver returns as a *string* to
+      // avoid precision loss. The cast keeps the API's `number` contract
+      // honest — a venue will never have two billion bookings.
+      db.select({ count: sql<number>`count(*)::int` }).from(schema.bookings).where(where),
     ])
 
     res.set('Cache-Control', 'no-store')
@@ -67,11 +70,11 @@ bookingsAdminRouter.get(
 
     const [byStatus, upcoming] = await Promise.all([
       db
-        .select({ status: schema.bookings.status, count: sql<number>`count(*)` })
+        .select({ status: schema.bookings.status, count: sql<number>`count(*)::int` })
         .from(schema.bookings)
         .groupBy(schema.bookings.status),
       db
-        .select({ count: sql<number>`count(*)` })
+        .select({ count: sql<number>`count(*)::int` })
         .from(schema.bookings)
         .where(and(gte(schema.bookings.date, today), eq(schema.bookings.status, 'confirmed'))),
     ])

@@ -40,12 +40,21 @@ const int = (value: string | undefined, fallback: number): number => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+/**
+ * Splits a comma-separated list of browser origins.
+ *
+ * Entries may be written without a scheme — Render's `fromService` only
+ * exposes `host` or `host:port` — so one is added, because the browser's
+ * Origin header always carries it and the comparison is exact.
+ */
 const list = (value: string | undefined, fallback: string[]): string[] => {
   if (!value) return fallback;
   return value
     .split(",")
     .map((entry) => entry.trim())
-    .filter(Boolean);
+    .filter(Boolean)
+    .map((entry) => (/^https?:\/\//.test(entry) ? entry : `https://${entry}`))
+    .map((entry) => entry.replace(/\/$/, ""));
 };
 
 export const env = {
@@ -54,16 +63,37 @@ export const env = {
 
   port: int(process.env.PORT, 4000),
 
-  /** libSQL URL. A `file:` URL keeps the whole database in one local file. */
-  databaseUrl:
-    process.env.DATABASE_URL ??
-    `file:${path.join(SERVER_ROOT, "data/mykingdom.db")}`,
-  databaseAuthToken: process.env.DATABASE_AUTH_TOKEN,
+  /** PostgreSQL connection string. Required — there is no sensible default. */
+  databaseUrl: process.env.DATABASE_URL ?? "",
+  /** Free Postgres instances allow few connections; this API is not busy. */
+  databasePoolSize: int(process.env.DATABASE_POOL_SIZE, 5),
 
-  /** Where uploaded images are written, and the path they are served from. */
+  /**
+   * Where uploaded photos go.
+   *
+   * "disk"       — writes into `uploadDir`. Fine locally and on any host
+   *                 with a persistent volume.
+   * "database"    — keeps the bytes in Postgres and serves them from the
+   *                 API. For hosts with neither a disk nor object storage.
+   * "cloudinary"  — offloads to Cloudinary's CDN.
+   */
+  storageDriver: (process.env.STORAGE_DRIVER ?? "disk") as
+    | "disk"
+    | "database"
+    | "cloudinary",
+
+  /** Used by the "disk" driver, and to serve what it has already written. */
   uploadDir: process.env.UPLOAD_DIR ?? path.join(SERVER_ROOT, "uploads"),
   uploadUrlPath: "/uploads",
   maxUploadBytes: int(process.env.MAX_UPLOAD_BYTES, 12 * 1024 * 1024),
+
+  cloudinary: {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME ?? "",
+    apiKey: process.env.CLOUDINARY_API_KEY ?? "",
+    apiSecret: process.env.CLOUDINARY_API_SECRET ?? "",
+    /** Keeps this project's photos together in the Cloudinary media library. */
+    folder: process.env.CLOUDINARY_FOLDER ?? "mykingdom",
+  },
 
   /**
    * Browser origins allowed to send credentialed requests.
@@ -74,6 +104,13 @@ export const env = {
     "http://localhost:5174",
     "http://localhost:5175",
   ]),
+
+  /**
+   * Serve the built dashboard from this server at /admin.
+   * Same-origin means its session cookie is first-party, which no browser
+   * privacy setting will interfere with.
+   */
+  serveAdmin: process.env.SERVE_ADMIN === "true",
 
   session: {
     cookieName: "mk_session",
@@ -96,6 +133,9 @@ export function assertProductionConfig(): void {
   if (!env.isProduction) return;
 
   const problems: string[] = [];
+  if (!env.databaseUrl) {
+    problems.push("DATABASE_URL is unset — there is no database to serve.");
+  }
   if (env.session.secret === "dev-only-insecure-secret") {
     problems.push("SESSION_SECRET is unset — sessions would be forgeable.");
   }
@@ -107,6 +147,30 @@ export function assertProductionConfig(): void {
   if (!process.env.CORS_ORIGINS) {
     problems.push(
       "CORS_ORIGINS is unset — only localhost origins would be allowed.",
+    );
+  }
+  if (env.storageDriver === "cloudinary") {
+    const missing = (
+      [
+        ["CLOUDINARY_CLOUD_NAME", env.cloudinary.cloudName],
+        ["CLOUDINARY_API_KEY", env.cloudinary.apiKey],
+        ["CLOUDINARY_API_SECRET", env.cloudinary.apiSecret],
+      ] as const
+    )
+      .filter(([, value]) => !value)
+      .map(([name]) => name);
+
+    if (missing.length > 0) {
+      problems.push(
+        `STORAGE_DRIVER is "cloudinary" but ${missing.join(", ")} ${missing.length === 1 ? "is" : "are"} unset — photo uploads would fail.`,
+      );
+    }
+  }
+  if (env.storageDriver === "disk") {
+    // Not fatal — a host with a mounted volume is fine — but on a disk-less
+    // host this is the setting that silently loses every uploaded photo.
+    console.warn(
+      '[api] STORAGE_DRIVER is "disk". If this host has no persistent volume, uploaded photos are lost on the next deploy. Use "database" or "cloudinary" instead.',
     );
   }
 

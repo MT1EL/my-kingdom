@@ -13,7 +13,14 @@ import type { ApiErrorBody } from '@/types'
  * deployment (Vite proxies `/api`); set `VITE_API_URL` when the API is on
  * its own host, e.g. "https://api.mykingdom.ge".
  */
-const BASE_URL = import.meta.env?.VITE_API_URL ?? ''
+const RAW_BASE = import.meta.env?.VITE_API_URL ?? ''
+
+/**
+ * Accepts either a full origin or a bare hostname.
+ * Render's `fromService` only exposes the host, with no scheme, and a URL
+ * without one would be read as a relative path.
+ */
+const BASE_URL = RAW_BASE && !/^https?:\/\//.test(RAW_BASE) ? `https://${RAW_BASE}` : RAW_BASE
 
 /** A failed request, carrying the API's own message so the UI can show it. */
 export class ApiError extends Error {

@@ -1,5 +1,5 @@
 import { createApp } from './app.ts'
-import { client } from './db/client.ts'
+import { closeDatabase } from './db/client.ts'
 import { prepareDatabase } from './db/bootstrap.ts'
 import { assertProductionConfig, env } from './env.ts'
 import { purgeExpiredSessions } from './lib/sessions.ts'
@@ -37,8 +37,9 @@ async function start(): Promise<void> {
   const shutdown = (signal: string): void => {
     console.log(`[api] ${signal} received, shutting down`)
     server.close(() => {
-      client.close()
-      process.exit(0)
+      closeDatabase()
+        .catch((error: unknown) => console.error('[api] failed to close the pool:', error))
+        .finally(() => process.exit(0))
     })
 
     // Do not hang forever on a stuck connection.

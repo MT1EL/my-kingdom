@@ -1,8 +1,11 @@
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
+import { eq } from 'drizzle-orm'
 import express, { type Express } from 'express'
-import { env } from './env.ts'
-import { ApiError } from './lib/http.ts'
+import path from 'node:path'
+import { db, schema } from './db/client.ts'
+import { env, SERVER_ROOT } from './env.ts'
+import { ApiError, route } from './lib/http.ts'
 import { attachUser } from './middleware/auth.ts'
 import { errorHandler, notFoundHandler } from './middleware/errors.ts'
 import { adminRouter } from './routes/admin/index.ts'
@@ -45,15 +48,42 @@ export function createApp(): Express {
 
   // Uploaded images. Immutable because every rendition has a random name —
   // a changed photo is a new file, never a new version of the same URL.
-  app.use(
-    env.uploadUrlPath,
-    express.static(env.uploadDir, {
-      maxAge: '365d',
-      immutable: true,
-      index: false,
-      dotfiles: 'ignore',
-    }),
-  )
+  const imageCacheControl = 'public, max-age=31536000, immutable'
+
+  if (env.storageDriver === 'database') {
+    // The bytes live in Postgres, so they are read and streamed here rather
+    // than served off the filesystem.
+    app.get(
+      `${env.uploadUrlPath}/:file`,
+      route(async (req, res) => {
+        const file = req.params.file
+        if (typeof file !== 'string') throw ApiError.notFound()
+
+        const rows = await db
+          .select()
+          .from(schema.imageFiles)
+          .where(eq(schema.imageFiles.id, file))
+          .limit(1)
+
+        const image = rows[0]
+        if (!image) throw ApiError.notFound()
+
+        res.set('Content-Type', image.contentType)
+        res.set('Cache-Control', imageCacheControl)
+        res.send(image.data)
+      }),
+    )
+  } else {
+    app.use(
+      env.uploadUrlPath,
+      express.static(env.uploadDir, {
+        maxAge: '365d',
+        immutable: true,
+        index: false,
+        dotfiles: 'ignore',
+      }),
+    )
+  }
 
   app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok', uptime: process.uptime() })
@@ -63,6 +93,22 @@ export function createApp(): Express {
   app.use('/api', contentRouter)
   app.use('/api', bookingsRouter)
   app.use('/api/admin', adminRouter)
+
+  // Optionally serve the built dashboard from this same origin. That keeps
+  // its login cookie first-party, which is the most reliable arrangement and
+  // avoids depending on a static host being able to proxy to the API.
+  if (env.serveAdmin) {
+    const adminDist = path.resolve(SERVER_ROOT, '..', 'admin', 'dist')
+
+    app.use(
+      '/admin',
+      express.static(adminDist, { index: false, maxAge: '1h' }),
+    )
+    // The dashboard is a single-page app: every unmatched path is its router's.
+    app.get(/^\/admin(?:\/.*)?$/, (_req, res) => {
+      res.sendFile(path.join(adminDist, 'index.html'))
+    })
+  }
 
   app.use(notFoundHandler)
   app.use(errorHandler)

@@ -4,6 +4,9 @@ import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
 
 export default defineConfig({
+  // The dashboard is served from /admin in production (the API hosts it, so
+  // its login cookie stays first-party) and from the root in development.
+  base: process.env.ADMIN_BASE ?? '/',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

@@ -71,7 +71,7 @@ usersRouter.delete(
     if (user.role === 'admin') {
       // Losing every admin would lock the dashboard permanently.
       const admins = await db
-        .select({ count: sql<number>`count(*)` })
+        .select({ count: sql<number>`count(*)::int` })
         .from(schema.users)
         .where(eq(schema.users.role, 'admin'))
 

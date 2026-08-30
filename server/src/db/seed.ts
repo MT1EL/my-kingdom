@@ -1,4 +1,4 @@
-import { client } from './client.ts'
+import { closeDatabase } from './client.ts'
 import { prepareDatabase } from './bootstrap.ts'
 import { env } from '../env.ts'
 
@@ -17,13 +17,13 @@ const reset = process.argv.includes('--reset')
 console.log(`[seed] database: ${env.databaseUrl}`)
 
 prepareDatabase({ reset })
-  .then(() => {
+  .then(async () => {
     console.log('[seed] done')
-    client.close()
+    await closeDatabase()
     process.exit(0)
   })
-  .catch((error: unknown) => {
+  .catch(async (error: unknown) => {
     console.error('[seed] failed:', error)
-    client.close()
+    await closeDatabase()
     process.exit(1)
   })

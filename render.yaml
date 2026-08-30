@@ -1,57 +1,103 @@
 # ------------------------------------------------------------------
-# The API, as a Render service.
+# Everything on Render, free tier.
 #
-# Render can read this file directly ("Blueprint" / New → Blueprint), or you
-# can create the service by hand and copy these settings.
+#   mykingdom-db     Postgres          — content, bookings, and the photos
+#   mykingdom-api    Web Service       — the API, and the dashboard at /admin
+#   mykingdom-site   Static Site       — the public site
 #
-# ⚠️  The disk below is what makes the data survive a restart: the SQLite
-# file and every uploaded photo live on it. A service without a persistent
-# disk loses both on each deploy — on Render a disk requires a paid instance
-# type, so `plan: free` and `disk:` cannot be combined. Check the current
-# plans before deploying; if you want to stay on a free instance, see the
-# "no disk" note in server/README.md.
+# Render reads this file from: New → Blueprint.
+#
+# Two consequences of the free tier, both covered in DEPLOYMENT.md:
+#   · the web service sleeps when idle, so the first request after a quiet
+#     spell waits for it to wake;
+#   · free Postgres instances have an expiry — check Render's current terms,
+#     because losing it means losing every booking.
 # ------------------------------------------------------------------
 
+databases:
+  - name: mykingdom-db
+    plan: free
+    region: frankfurt
+    databaseName: mykingdom
+    user: mykingdom
+
 services:
+  # ---------------------------- the API ----------------------------
   - type: web
     name: mykingdom-api
     runtime: node
-    plan: starter
-    region: frankfurt # closest of Render's regions to Georgia
+    plan: free
+    region: frankfurt
     rootDir: .
-    # The server package builds `shared/` too, so install and build run here.
-    buildCommand: npm --prefix server install && npm --prefix server run build
+    # --include=dev is required: NODE_ENV=production makes npm skip
+    # devDependencies, and TypeScript is one of them.
+    # The dashboard is built here too, because this service serves it.
+    buildCommand: >-
+      npm --prefix admin install --include=dev &&
+      ADMIN_BASE=/admin/ npm --prefix admin run build &&
+      npm --prefix server install --include=dev &&
+      npm --prefix server run build
     startCommand: npm --prefix server start
     healthCheckPath: /api/health
-
-    disk:
-      name: mykingdom-data
-      mountPath: /var/data
-      sizeGB: 1
 
     envVars:
       - key: NODE_ENV
         value: production
 
-      # Both live on the persistent disk, so a deploy never loses them.
       - key: DATABASE_URL
-        value: file:/var/data/mykingdom.db
-      - key: UPLOAD_DIR
-        value: /var/data/uploads
+        fromDatabase:
+          name: mykingdom-db
+          property: connectionString
 
-      # Signs the session cookie. `generateValue` makes Render create a
-      # random one on first deploy — never commit a real secret here.
+      # Render's free tier has no disk and no object storage, so the photos
+      # live in Postgres and are served from /uploads.
+      - key: STORAGE_DRIVER
+        value: database
+
+      # Serve the dashboard from this same origin, at /admin. Same-origin
+      # keeps its login cookie first-party, which no browser privacy setting
+      # will interfere with.
+      - key: SERVE_ADMIN
+        value: "true"
+
+      # Render generates this on first deploy; never commit a real secret.
       - key: SESSION_SECRET
         generateValue: true
 
-      # Set these in the Render dashboard before the first deploy: the first
-      # admin account is created from them on boot.
+      # The first admin account is created from these on boot. Set both in
+      # the dashboard before deploying.
       - key: ADMIN_EMAIL
         sync: false
       - key: ADMIN_PASSWORD
         sync: false
 
-      # The site and the dashboard origins, comma-separated. Required in
-      # production — the server refuses to start without it.
+      # The public site's origin. The dashboard is same-origin so it needs
+      # no entry here.
       - key: CORS_ORIGINS
-        sync: false
+        fromService:
+          name: mykingdom-site
+          type: web
+          property: hostport
+
+  # -------------------------- the site -----------------------------
+  - type: web
+    name: mykingdom-site
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+
+    envVars:
+      # Baked into the bundle at build time: the site calls the API directly.
+      # No cookies are involved on the public site, so plain CORS is enough.
+      - key: VITE_API_URL
+        fromService:
+          name: mykingdom-api
+          type: web
+          property: host
+
+    routes:
+      # React Router owns /menu, /programs and the rest. Without this a
+      # refresh on any path but "/" would 404.
+      - type: rewrite
+        source: /*
+        destination: /index.html

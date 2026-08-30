@@ -1,8 +1,15 @@
-import { sql } from 'drizzle-orm'
-import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import {
+  boolean,
+  customType,
+  index,
+  integer,
+  pgTable,
+  text,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core'
 
 /* ------------------------------------------------------------------
-   Database schema (SQLite via libSQL).
+   Database schema (PostgreSQL).
 
    Conventions used throughout:
    - `id` is a text slug for content the dashboard reorders and links to
@@ -11,22 +18,31 @@ import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqli
      JSON text and parsed at the serialisation boundary in `lib/serialize.ts`.
    - `sortOrder` drives display order; the dashboard writes it on drag-drop.
    - `published` lets a moderator hide something without deleting it.
-   - Timestamps are ISO-8601 strings in UTC, so they survive a plain file copy.
+   - Timestamps are ISO-8601 strings in UTC. Stored as text rather than
+     `timestamptz` so the value a client reads back is byte-for-byte the one
+     the API wrote, with no driver-level timezone conversion in between.
 ------------------------------------------------------------------- */
 
-const now = sql`(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))`
+/** Raw bytes. Drizzle has no built-in bytea, and image data needs one. */
+export const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType() {
+    return 'bytea'
+  },
+})
+
+const nowISO = () => new Date().toISOString()
 
 /** Columns every content table carries. */
 const contentColumns = {
   sortOrder: integer('sort_order').notNull().default(0),
-  published: integer('published', { mode: 'boolean' }).notNull().default(true),
-  createdAt: text('created_at').notNull().default(now),
-  updatedAt: text('updated_at').notNull().default(now),
+  published: boolean('published').notNull().default(true),
+  createdAt: text('created_at').notNull().$defaultFn(nowISO),
+  updatedAt: text('updated_at').notNull().$defaultFn(nowISO),
 }
 
 /* ---------------------------- content ---------------------------- */
 
-export const programs = sqliteTable(
+export const programs = pgTable(
   'programs',
   {
     id: text('id').primaryKey(),
@@ -40,13 +56,13 @@ export const programs = sqliteTable(
     /** JSON array of strings. */
     highlights: text('highlights').notNull().default('[]'),
     accent: text('accent').notNull(),
-    featured: integer('featured', { mode: 'boolean' }).notNull().default(false),
+    featured: boolean('featured').notNull().default(false),
     ...contentColumns,
   },
   (table) => [index('programs_sort_idx').on(table.sortOrder)],
 )
 
-export const activities = sqliteTable(
+export const activities = pgTable(
   'activities',
   {
     id: text('id').primaryKey(),
@@ -59,7 +75,7 @@ export const activities = sqliteTable(
   (table) => [index('activities_sort_idx').on(table.sortOrder)],
 )
 
-export const benefits = sqliteTable(
+export const benefits = pgTable(
   'benefits',
   {
     id: text('id').primaryKey(),
@@ -71,7 +87,7 @@ export const benefits = sqliteTable(
   (table) => [index('benefits_sort_idx').on(table.sortOrder)],
 )
 
-export const extras = sqliteTable(
+export const extras = pgTable(
   'extras',
   {
     id: text('id').primaryKey(),
@@ -83,7 +99,7 @@ export const extras = sqliteTable(
   (table) => [index('extras_sort_idx').on(table.sortOrder)],
 )
 
-export const menuCategories = sqliteTable(
+export const menuCategories = pgTable(
   'menu_categories',
   {
     id: text('id').primaryKey(),
@@ -97,7 +113,7 @@ export const menuCategories = sqliteTable(
   (table) => [index('menu_categories_sort_idx').on(table.sortOrder)],
 )
 
-export const menuItems = sqliteTable(
+export const menuItems = pgTable(
   'menu_items',
   {
     id: text('id').primaryKey(),
@@ -116,7 +132,7 @@ export const menuItems = sqliteTable(
   (table) => [index('menu_items_category_idx').on(table.categoryId, table.sortOrder)],
 )
 
-export const galleryCategories = sqliteTable(
+export const galleryCategories = pgTable(
   'gallery_categories',
   {
     id: text('id').primaryKey(),
@@ -126,7 +142,7 @@ export const galleryCategories = sqliteTable(
   (table) => [index('gallery_categories_sort_idx').on(table.sortOrder)],
 )
 
-export const galleryImages = sqliteTable(
+export const galleryImages = pgTable(
   'gallery_images',
   {
     id: text('id').primaryKey(),
@@ -143,7 +159,7 @@ export const galleryImages = sqliteTable(
 /* ------------------------- site settings ------------------------- */
 
 /** Single-row table. Always id = 1. */
-export const siteSettings = sqliteTable('site_settings', {
+export const siteSettings = pgTable('site_settings', {
   id: integer('id').primaryKey(),
   name: text('name').notNull(),
   nameLatin: text('name_latin').notNull(),
@@ -160,7 +176,7 @@ export const siteSettings = sqliteTable('site_settings', {
   instagram: text('instagram'),
 
   mapQuery: text('map_query').notNull(),
-  mapIsExact: integer('map_is_exact', { mode: 'boolean' }).notNull().default(false),
+  mapIsExact: boolean('map_is_exact').notNull().default(false),
   mapZoom: integer('map_zoom').notNull().default(12),
 
   priceNote: text('price_note').notNull(),
@@ -171,10 +187,10 @@ export const siteSettings = sqliteTable('site_settings', {
   maxAheadDays: integer('max_ahead_days').notNull().default(90),
   maxChildren: integer('max_children').notNull().default(40),
 
-  updatedAt: text('updated_at').notNull().default(now),
+  updatedAt: text('updated_at').notNull().$defaultFn(nowISO),
 })
 
-export const openingHours = sqliteTable(
+export const openingHours = pgTable(
   'opening_hours',
   {
     id: text('id').primaryKey(),
@@ -188,7 +204,7 @@ export const openingHours = sqliteTable(
 /* -------------------------- availability ------------------------- */
 
 /** The venue's recurring weekly pattern. No rows for a weekday = closed. */
-export const scheduleSlots = sqliteTable(
+export const scheduleSlots = pgTable(
   'schedule_slots',
   {
     id: text('id').primaryKey(),
@@ -203,20 +219,20 @@ export const scheduleSlots = sqliteTable(
 )
 
 /** One-off closures that override the weekly pattern. */
-export const blackoutDates = sqliteTable(
+export const blackoutDates = pgTable(
   'blackout_dates',
   {
     id: text('id').primaryKey(),
     date: text('date').notNull(),
     reason: text('reason'),
-    createdAt: text('created_at').notNull().default(now),
+    createdAt: text('created_at').notNull().$defaultFn(nowISO),
   },
   (table) => [uniqueIndex('blackout_dates_date_idx').on(table.date)],
 )
 
 /* ---------------------------- bookings --------------------------- */
 
-export const bookings = sqliteTable(
+export const bookings = pgTable(
   'bookings',
   {
     id: text('id').primaryKey(),
@@ -241,8 +257,8 @@ export const bookings = sqliteTable(
     /** Private to the venue; never returned by a public endpoint. */
     staffNote: text('staff_note').notNull().default(''),
 
-    createdAt: text('created_at').notNull().default(now),
-    updatedAt: text('updated_at').notNull().default(now),
+    createdAt: text('created_at').notNull().$defaultFn(nowISO),
+    updatedAt: text('updated_at').notNull().$defaultFn(nowISO),
   },
   (table) => [
     uniqueIndex('bookings_reference_idx').on(table.reference),
@@ -253,7 +269,7 @@ export const bookings = sqliteTable(
 
 /* ------------------------------ auth ----------------------------- */
 
-export const users = sqliteTable(
+export const users = pgTable(
   'users',
   {
     id: text('id').primaryKey(),
@@ -262,13 +278,13 @@ export const users = sqliteTable(
     name: text('name').notNull(),
     /** 'admin' | 'moderator' */
     role: text('role').notNull().default('moderator'),
-    createdAt: text('created_at').notNull().default(now),
+    createdAt: text('created_at').notNull().$defaultFn(nowISO),
   },
   (table) => [uniqueIndex('users_email_idx').on(table.email)],
 )
 
-/** Server-side sessions. The id is the opaque token stored in the cookie. */
-export const sessions = sqliteTable(
+/** Server-side sessions. The id is a hash of the token in the cookie. */
+export const sessions = pgTable(
   'sessions',
   {
     id: text('id').primaryKey(),
@@ -276,22 +292,54 @@ export const sessions = sqliteTable(
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
     expiresAt: text('expires_at').notNull(),
-    createdAt: text('created_at').notNull().default(now),
+    createdAt: text('created_at').notNull().$defaultFn(nowISO),
   },
   (table) => [index('sessions_user_idx').on(table.userId)],
 )
 
-/** Uploaded originals, so the dashboard can offer a media library. */
-export const uploads = sqliteTable('uploads', {
+/* ---------------------------- uploads ---------------------------- */
+
+/** One row per uploaded photo, for the dashboard's media library. */
+export const uploads = pgTable('uploads', {
   id: text('id').primaryKey(),
   filename: text('filename').notNull(),
-  /** Public path of the largest rendition, e.g. "/uploads/ab12-1400.webp". */
+  /** Public path of the largest rendition. */
   url: text('url').notNull(),
-  /** JSON map of width → public path. */
+  /** JSON map of width → public URL. */
   renditions: text('renditions').notNull().default('{}'),
+  /**
+   * What the storage driver needs in order to delete the photo later: a
+   * filename prefix for the disk and database drivers, a public_id on
+   * Cloudinary.
+   */
+  storageKey: text('storage_key'),
   width: integer('width').notNull(),
   height: integer('height').notNull(),
   bytes: integer('bytes').notNull(),
   uploadedBy: text('uploaded_by').references(() => users.id, { onDelete: 'set null' }),
-  createdAt: text('created_at').notNull().default(now),
+  createdAt: text('created_at').notNull().$defaultFn(nowISO),
 })
+
+/**
+ * The image bytes themselves, one row per rendition.
+ *
+ * Render's free tier has no disk and no object storage, so photos live here
+ * and the API serves them from `/uploads/:file`. At three WebP widths a
+ * photo costs roughly 370 kB, so a 1 GB database holds thousands — far more
+ * than a venue gallery will ever need.
+ */
+export const imageFiles = pgTable(
+  'image_files',
+  {
+    /** Filename, e.g. "a1b2c3d4-800.webp". This is the public URL segment. */
+    id: text('id').primaryKey(),
+    /** Groups the renditions of one photo, so deleting removes all of them. */
+    storageKey: text('storage_key').notNull(),
+    contentType: text('content_type').notNull().default('image/webp'),
+    width: integer('width').notNull(),
+    bytes: integer('bytes').notNull(),
+    data: bytea('data').notNull(),
+    createdAt: text('created_at').notNull().$defaultFn(nowISO),
+  },
+  (table) => [index('image_files_key_idx').on(table.storageKey)],
+)

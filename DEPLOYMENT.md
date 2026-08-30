@@ -1,133 +1,86 @@
 # Deployment
 
-Three pieces, and they do not all go to the same place:
+Everything runs on Render's free tier, as three resources created from one
+blueprint:
 
-| Piece | What it is | Where it goes |
+| Resource | Type | Holds |
 | --- | --- | --- |
-| `src/` | The public site | Netlify ✅ already deployed |
-| `admin/` | The dashboard | A second Netlify site |
-| `server/` | The API + database + photos | **A Node host — not Netlify** |
+| `mykingdom-db` | Postgres | Content, bookings, and the photos |
+| `mykingdom-api` | Web Service | The API, and the dashboard at `/admin` |
+| `mykingdom-site` | Static Site | The public site |
 
-## Why the API cannot go on Netlify
+Two consequences of the free tier that shape the design:
 
-Netlify serves static files. `server/` does not build a website — it builds
-a Node *program* that has to be **run** and listen on a port. Point a
-Netlify site at it and there is no `index.html` to serve, so every URL
-returns "Page not found". No build setting changes that.
-
-(Netlify *can* run backend code as serverless Functions, but a function has
-no disk that survives between requests — the database and every uploaded
-photo would vanish. That route means moving the database to Turso and the
-uploads to Netlify Blobs. It is a real option, just a different project.)
-
-So the API needs a host that runs a process and gives it a disk.
+- **No persistent disk and no object storage.** The database is Postgres
+  rather than a SQLite file, and uploaded photos are stored as rows in it
+  (`STORAGE_DRIVER=database`) and served from `/uploads`.
+- **The dashboard is served by the API**, not as its own static site. That
+  keeps its login cookie first-party, which no browser privacy setting will
+  interfere with.
 
 ---
 
-## 1. Deploy the API
+## 1. Deploy
 
-Pick one. All three read config that is already in this repo.
+Render → **New → Blueprint** → this repository. It reads `render.yaml` and
+creates all three resources, wiring the database URL and the two service
+hostnames together automatically.
 
-### Option A — Render (`render.yaml`)
-
-New → **Blueprint** → this repository. Render reads `render.yaml`.
-
-⚠️ The blueprint asks for a 1 GB disk, and **on Render a persistent disk
-requires a paid instance type**. Free web services cannot have one, and
-without a disk you lose the database and every photo on each deploy. Check
-the current plans before committing to this.
-
-### Option B — Fly.io (`fly.toml`, `Dockerfile`)
-
-```bash
-fly launch --no-deploy          # keep the existing fly.toml
-fly volumes create mykingdom_data --size 1 --region fra
-fly secrets set \
-  SESSION_SECRET="$(node -e 'console.log(require("crypto").randomBytes(32).toString("hex"))')" \
-  ADMIN_EMAIL="you@example.com" \
-  ADMIN_PASSWORD="a-real-password" \
-  CORS_ORIGINS="https://starlit-buttercream-3e619c.netlify.app"
-fly deploy
-```
-
-The volume is what makes the data survive. Keep it to **one** machine —
-SQLite is a single file with one writer.
-
-### Option C — Railway, Koyeb, or a VPS (`Dockerfile`)
-
-Build from the repository root (`docker build -t mykingdom-api .`), mount a
-volume at `/var/data`, and set the same environment variables. On a VPS,
-put nginx or Caddy in front for TLS.
-
-### Environment variables (all options)
+Set two variables on `mykingdom-api` before the first deploy:
 
 | Variable | Value |
 | --- | --- |
-| `NODE_ENV` | `production` |
-| `DATABASE_URL` | `file:/var/data/mykingdom.db` |
-| `UPLOAD_DIR` | `/var/data/uploads` |
-| `SESSION_SECRET` | long random string — `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
 | `ADMIN_EMAIL` | your dashboard login |
 | `ADMIN_PASSWORD` | a real password, not `changeme123` |
-| `CORS_ORIGINS` | both Netlify URLs, comma-separated |
 
-The server **refuses to start in production** without the last four. That
-is deliberate — it stops a deployment going live with a publicly known
-password. If the deploy fails, read the log: it names exactly what is
-missing.
+Everything else — `DATABASE_URL`, `SESSION_SECRET`, `CORS_ORIGINS`,
+`STORAGE_DRIVER`, `SERVE_ADMIN` — the blueprint fills in.
+
+The server **refuses to start in production** if the auth variables are
+missing, and the log names exactly which ones. That is deliberate: it stops
+a deployment going live with a publicly known password.
 
 On first boot it applies its own migrations, loads the starting content and
-creates the admin account. Nothing to run by hand, and restarting is safe:
-it only fills in what is missing and never overwrites edited content.
+creates the admin account. Nothing to run by hand. Restarting is safe — it
+only fills in what is missing and never overwrites edited content.
 
-**Check it:** `https://YOUR-API/api/health` → `{"status":"ok",...}`
+**Check it:**
 
-### The disk is not optional
-
-The SQLite file and every uploaded photo live on it. A service without a
-persistent disk loses all of it on every deploy — bookings included.
-
-If you would rather not pay for a disk, the database can move to
-[Turso](https://turso.tech) with **no code change**: set `DATABASE_URL` to
-the Turso URL and `DATABASE_AUTH_TOKEN` to its token. Photos would still
-need somewhere to live, so the upload feature would have to be rewritten
-against object storage first — ask before going that way.
+- `https://mykingdom-api.onrender.com/api/health` → `{"status":"ok",...}`
+- `https://mykingdom-site.onrender.com` → the site
+- `https://mykingdom-api.onrender.com/admin` → the dashboard login
 
 ---
 
-## 2. Point the site at the API
+## 2. Two things about the free tier
 
-In `netlify.toml`, replace both `API_HOST` placeholders with the API's host
-(no scheme, no trailing slash):
+### The web service sleeps
 
-```toml
-to = "https://mykingdom-api.onrender.com/api/:splat"
-```
+After a stretch with no traffic Render suspends a free service, and the next
+request waits for it to start — tens of seconds. For a venue's website that
+is a visitor staring at a loading screen.
 
-Push. Netlify redeploys and the site starts working.
+Ping `https://mykingdom-api.onrender.com/api/health` every ~10 minutes from
+a free scheduler (cron-job.org, UptimeRobot) to keep it warm. The real fix
+is a paid instance, which needs no code change.
 
-That file also adds the single-page-app fallback, which fixes a second,
-separate bug: without it `/menu`, `/programs` and every other path return
-404 on a refresh or a direct visit.
+### ⚠️ Free Postgres expires
 
----
+Render's free Postgres has historically been **deleted** after a fixed
+period, not merely suspended. If that is still the policy, everything —
+bookings included — goes with it.
 
-## 3. Deploy the dashboard
+**Check Render's current terms before treating this as production.** If the
+expiry is real, the options are a paid Postgres (no code change) or moving
+the database to another free host such as Neon or Turso.
 
-Netlify → Add new site → same repository → **Base directory: `admin`**.
-It picks up `admin/netlify.toml`; replace `API_HOST` there too.
-
-Then set `CORS_ORIGINS` on the API to both site URLs and redeploy it:
-
-```
-https://starlit-buttercream-3e619c.netlify.app,https://YOUR-ADMIN-SITE.netlify.app
-```
+Either way, take backups (below).
 
 ---
 
-## 4. After the first deploy
+## 3. After the first deploy
 
-- Sign in to the dashboard and **change the admin password**.
+- Sign in at `/admin` and **change the admin password**.
 - Fill in the real phone, address and opening hours under **პარამეტრები**.
   Until then the site honestly shows "დასაზუსტებელია" rather than inventing
   contact details.
@@ -139,26 +92,43 @@ https://starlit-buttercream-3e619c.netlify.app,https://YOUR-ADMIN-SITE.netlify.a
 
 ## Backups
 
-The whole database is one file:
+Everything, including the photos, is in the one database:
 
 ```bash
-cp /var/data/mykingdom.db /var/data/backup-$(date +%F).db
+pg_dump "$EXTERNAL_DATABASE_URL" > backup-$(date +%F).sql
 ```
 
-Download it periodically — a disk on the same machine is not a backup.
-Photos in `/var/data/uploads` need copying too.
+Render shows the External Database URL on the database page. Do this on a
+schedule and keep the files somewhere other than your laptop — especially
+while the free instance has an expiry.
 
 ---
 
 ## Local development
 
+No Postgres installation needed.
+
 ```bash
-npm run setup        # installs server + admin deps, seeds the database
-npm run dev:api      # API       → :4000
-npm run dev          # site      → :5173
-npm run dev:admin    # dashboard → :5174
+npm run setup            # installs server + admin dependencies
+
+# terminal 1 — a real PostgreSQL (PGlite) on :5433
+npm --prefix server run db:local
+
+# terminal 2
+cp server/.env.example server/.env
+npm run dev:api          # API       → :4000
+
+# terminal 3
+npm run dev              # site      → :5173
+
+# terminal 4 (optional)
+npm run dev:admin        # dashboard → :5174
 ```
 
 The Vite dev servers proxy `/api` and `/uploads` to port 4000. **That proxy
-is a dev-server feature and does not exist in production** — in production
-the `netlify.toml` redirects do the same job.
+is a dev-server feature and does not exist in production** — there the site
+calls the API directly via `VITE_API_URL`, and the dashboard is served from
+the API itself.
+
+Locally `STORAGE_DRIVER` defaults to `disk`, so uploads land in
+`server/uploads` and you can see them as files.
