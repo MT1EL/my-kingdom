@@ -16,11 +16,37 @@ import type { ApiErrorBody } from '@/types'
 const RAW_BASE = import.meta.env?.VITE_API_URL ?? ''
 
 /**
- * Accepts either a full origin or a bare hostname.
- * Render's `fromService` only exposes the host, with no scheme, and a URL
- * without one would be read as a relative path.
+ * The API's origin, normalised.
+ *
+ * Accepts a full URL or a bare hostname (Render's `fromService` only exposes
+ * the host, with no scheme, and a value without one would be read as a
+ * relative path). A trailing "/api" is also trimmed: every path in this file
+ * already starts with it, and pasting the endpoint rather than the origin is
+ * an easy mistake that would otherwise produce "/api/api/content".
  */
-const BASE_URL = RAW_BASE && !/^https?:\/\//.test(RAW_BASE) ? `https://${RAW_BASE}` : RAW_BASE
+export const API_BASE = (() => {
+  if (!RAW_BASE) return ''
+  const withScheme = /^https?:\/\//.test(RAW_BASE) ? RAW_BASE : `https://${RAW_BASE}`
+  return withScheme.replace(/\/+$/, '').replace(/\/api$/, '')
+})()
+
+const BASE_URL = API_BASE
+
+/**
+ * Resolves a URL stored in the database against the API.
+ *
+ * Uploaded photos are stored as site-relative paths ("/uploads/…"), because
+ * that is what they are when the API and the site share an origin. When they
+ * do not — the site on one host, the API on another — the browser would
+ * resolve them against the site and get a 404, so the API's origin is put
+ * back in front. Absolute URLs (stock photos, Cloudinary) pass through
+ * untouched.
+ */
+export function mediaUrl(src: string): string {
+  if (!src || !API_BASE) return src
+  if (/^(https?:)?\/\//.test(src) || src.startsWith('data:')) return src
+  return src.startsWith('/') ? `${API_BASE}${src}` : src
+}
 
 /** A failed request, carrying the API's own message so the UI can show it. */
 export class ApiError extends Error {

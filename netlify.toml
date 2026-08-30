@@ -1,0 +1,30 @@
+# ------------------------------------------------------------------
+# Netlify build for the public site (the `src/` app).
+#
+# The API is NOT here — it runs on Render, and the site reaches it through
+# `VITE_API_URL`, which must be set in Netlify's environment variables:
+#
+#   VITE_API_URL = https://mykingdom-api.onrender.com
+#
+# Note: the ORIGIN, with no trailing "/api". Every request path in the site
+# already begins with /api. (A trailing "/api" is trimmed defensively in
+# src/lib/http.ts, but setting it correctly is clearer.)
+#
+# The API must also list this site's URL in its CORS_ORIGINS, or the browser
+# will block the responses.
+# ------------------------------------------------------------------
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# React Router owns /menu, /programs, /gallery and the rest. Without this a
+# direct visit or a refresh on any path but "/" asks Netlify for a file that
+# does not exist and gets a 404.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

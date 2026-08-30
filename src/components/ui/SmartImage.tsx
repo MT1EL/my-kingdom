@@ -1,5 +1,6 @@
 import { useState, type ImgHTMLAttributes } from 'react'
 import { cn } from '@/lib/cn'
+import { mediaUrl } from '@/lib/http'
 
 interface SmartImageProps extends ImgHTMLAttributes<HTMLImageElement> {
   src: string
@@ -44,7 +45,9 @@ export function SmartImage({
         </span>
       )}
       <img
-        src={src}
+        // Photos are stored as "/uploads/…" paths; when the API lives on
+        // another host that has to be resolved against it, not against us.
+        src={mediaUrl(src)}
         alt={alt}
         loading={loading}
         decoding="async"

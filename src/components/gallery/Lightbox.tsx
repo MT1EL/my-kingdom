@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import type { GalleryImage } from '@/types'
+import { mediaUrl } from '@/lib/http'
 
 interface LightboxProps {
   images: GalleryImage[]
@@ -92,7 +93,7 @@ export function Lightbox({ images, index, onClose, onNavigate }: LightboxProps) 
         <figure className="flex max-h-full flex-col items-center gap-4">
           <img
             key={image.id}
-            src={image.src}
+            src={mediaUrl(image.src)}
             alt={image.alt}
             className="max-h-[70vh] w-auto max-w-full rounded-3xl object-contain shadow-lift animate-rise"
           />

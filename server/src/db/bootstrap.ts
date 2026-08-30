@@ -20,9 +20,38 @@ import * as schema from './schema.ts'
 
 const count = (table: Parameters<typeof db.$count>[0]): Promise<number> => db.$count(table)
 
+/** Hides the password when a connection string has to appear in a log. */
+function describeTarget(url: string): string {
+  try {
+    const parsed = new URL(url)
+    return `${parsed.protocol}//${parsed.hostname}:${parsed.port || '5432'}${parsed.pathname}`
+  } catch {
+    return '(DATABASE_URL is not a valid URL)'
+  }
+}
+
 export async function migrateDatabase(log = console.log): Promise<void> {
   log('[db] applying migrations')
-  await migrate(db, { migrationsFolder: path.join(SERVER_ROOT, 'drizzle') })
+
+  try {
+    await migrate(db, { migrationsFolder: path.join(SERVER_ROOT, 'drizzle') })
+  } catch (cause) {
+    // The first thing that touches the database, so a bad DATABASE_URL always
+    // surfaces here. The raw driver error names neither the setting nor the
+    // address it tried, which makes it needlessly hard to act on.
+    const code = (cause as { code?: string }).code
+    if (code === 'ECONNREFUSED' || code === 'ENOTFOUND' || code === 'ETIMEDOUT') {
+      throw new Error(
+        `Cannot reach the database at ${describeTarget(env.databaseUrl)} (${code}).\n` +
+          'Check DATABASE_URL. On Render it must be the database\'s Internal\n' +
+          'Database URL — a service created by hand does not inherit the value\n' +
+          'from render.yaml, so set it explicitly or deploy via a Blueprint.\n' +
+          'Locally, run `npm run db:local` first. See DEPLOYMENT.md.',
+        { cause },
+      )
+    }
+    throw cause
+  }
 }
 
 /** Wipes editable content. Bookings and users are never touched. */
