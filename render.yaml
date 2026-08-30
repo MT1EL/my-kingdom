@@ -1,0 +1,57 @@
+# ------------------------------------------------------------------
+# The API, as a Render service.
+#
+# Render can read this file directly ("Blueprint" / New → Blueprint), or you
+# can create the service by hand and copy these settings.
+#
+# ⚠️  The disk below is what makes the data survive a restart: the SQLite
+# file and every uploaded photo live on it. A service without a persistent
+# disk loses both on each deploy — on Render a disk requires a paid instance
+# type, so `plan: free` and `disk:` cannot be combined. Check the current
+# plans before deploying; if you want to stay on a free instance, see the
+# "no disk" note in server/README.md.
+# ------------------------------------------------------------------
+
+services:
+  - type: web
+    name: mykingdom-api
+    runtime: node
+    plan: starter
+    region: frankfurt # closest of Render's regions to Georgia
+    rootDir: .
+    # The server package builds `shared/` too, so install and build run here.
+    buildCommand: npm --prefix server install && npm --prefix server run build
+    startCommand: npm --prefix server start
+    healthCheckPath: /api/health
+
+    disk:
+      name: mykingdom-data
+      mountPath: /var/data
+      sizeGB: 1
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      # Both live on the persistent disk, so a deploy never loses them.
+      - key: DATABASE_URL
+        value: file:/var/data/mykingdom.db
+      - key: UPLOAD_DIR
+        value: /var/data/uploads
+
+      # Signs the session cookie. `generateValue` makes Render create a
+      # random one on first deploy — never commit a real secret here.
+      - key: SESSION_SECRET
+        generateValue: true
+
+      # Set these in the Render dashboard before the first deploy: the first
+      # admin account is created from them on boot.
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+
+      # The site and the dashboard origins, comma-separated. Required in
+      # production — the server refuses to start without it.
+      - key: CORS_ORIGINS
+        sync: false
