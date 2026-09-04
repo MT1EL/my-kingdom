@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from '@/components/layout/Layout'
 import { ContentProvider } from '@/content'
 import HomePage from '@/pages/HomePage'
@@ -8,6 +8,7 @@ import GalleryPage from '@/pages/GalleryPage'
 import LocationPage from '@/pages/LocationPage'
 import BookingPage from '@/pages/BookingPage'
 import NotFoundPage from '@/pages/NotFoundPage'
+import { bookingEnabled } from '@/lib/features'
 
 export default function App() {
   return (
@@ -20,7 +21,13 @@ export default function App() {
             <Route path="menu" element={<MenuPage />} />
             <Route path="gallery" element={<GalleryPage />} />
             <Route path="location" element={<LocationPage />} />
-            <Route path="booking" element={<BookingPage />} />
+            {/* Switched off with VITE_BOOKING_ENABLED=false. The route stays
+                registered and redirects, so links already out in the world
+                (and bookmarks) land on the home page rather than a 404. */}
+            <Route
+              path="booking"
+              element={bookingEnabled ? <BookingPage /> : <Navigate to="/" replace />}
+            />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>

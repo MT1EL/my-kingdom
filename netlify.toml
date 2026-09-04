@@ -21,6 +21,12 @@
 [build.environment]
   NODE_VERSION = "22"
 
+  # Set to "false" to take the booking flow off the site: every call to
+  # action disappears and /booking redirects home. Baked in at build time,
+  # so changing it needs a redeploy. Turn the API's BOOKING_ENABLED off
+  # too — this variable only hides the interface.
+  VITE_BOOKING_ENABLED = "true"
+
 # React Router owns /menu, /programs, /gallery and the rest. Without this a
 # direct visit or a refresh on any path but "/" asks Netlify for a file that
 # does not exist and gets a 404.

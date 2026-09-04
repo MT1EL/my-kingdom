@@ -2,7 +2,8 @@ import { CalendarHeart, Clock, Info, Mail, MapPin, Navigation, Phone } from 'luc
 import { Container } from '@/components/ui/Container'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Reveal } from '@/components/ui/Reveal'
-import { AnchorButton, LinkButton } from '@/components/ui/Button'
+import { AnchorButton } from '@/components/ui/Button'
+import { BookingButton } from '@/components/booking/BookingGate'
 import { ContactValue } from '@/components/ui/ContactValue'
 import { FacebookIcon } from '@/components/ui/SocialIcons'
 import { mapDirectionsUrl, mapEmbedUrl, useSite } from '@/content'
@@ -130,10 +131,10 @@ export default function LocationPage() {
                 )}
               </div>
 
-              <LinkButton to="/booking" size="lg">
+              <BookingButton size="lg">
                 <CalendarHeart className="size-5" />
                 დაჯავშნე დაბადების დღე
-              </LinkButton>
+              </BookingButton>
             </Reveal>
 
             {/* Map */}

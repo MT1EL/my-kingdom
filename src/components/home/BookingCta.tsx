@@ -2,12 +2,18 @@ import { CalendarHeart, MapPin } from 'lucide-react'
 import { Container } from '@/components/ui/Container'
 import { Reveal } from '@/components/ui/Reveal'
 import { LinkButton, AnchorButton } from '@/components/ui/Button'
+import { bookingEnabled } from '@/lib/features'
 import { SmartImage } from '@/components/ui/SmartImage'
 import { useSite } from '@/content'
 import { FacebookIcon } from '@/components/ui/SocialIcons'
 
 export function BookingCta() {
   const site = useSite()
+
+  // The whole section is about the booking flow — heading, copy and button
+  // alike — so with booking switched off it goes rather than being emptied
+  // out. See `lib/features.ts`.
+  if (!bookingEnabled) return null
 
   return (
     <section className="pb-20 sm:pb-28">

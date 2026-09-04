@@ -3,6 +3,7 @@ import { ArrowRight, Check, Clock, Users } from 'lucide-react'
 import type { Program } from '@/types'
 import { cn } from '@/lib/cn'
 import { SmartImage } from '@/components/ui/SmartImage'
+import { BookingGate } from '@/components/booking/BookingGate'
 import { formatDuration } from '@/lib/date'
 
 interface ProgramCardProps {
@@ -61,13 +62,15 @@ export function ProgramCard({ program, compact = false }: ProgramCardProps) {
           </ul>
         )}
 
-        <Link
-          to={`/booking?program=${program.id}`}
-          className="mt-6 inline-flex items-center justify-center gap-2 rounded-full border-2 border-royal-200 px-5 py-3 text-[0.95rem] font-semibold text-royal-800 transition-all duration-300 hover:border-transparent hover:gradient-royal hover:text-white"
-        >
-          აირჩიე ეს პროგრამა
-          <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
-        </Link>
+        <BookingGate>
+          <Link
+            to={`/booking?program=${program.id}`}
+            className="mt-6 inline-flex items-center justify-center gap-2 rounded-full border-2 border-royal-200 px-5 py-3 text-[0.95rem] font-semibold text-royal-800 transition-all duration-300 hover:border-transparent hover:gradient-royal hover:text-white"
+          >
+            აირჩიე ეს პროგრამა
+            <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
+          </Link>
+        </BookingGate>
       </div>
     </article>
   )

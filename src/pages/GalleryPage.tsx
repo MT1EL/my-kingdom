@@ -4,7 +4,7 @@ import { Container } from '@/components/ui/Container'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Reveal } from '@/components/ui/Reveal'
 import { SmartImage } from '@/components/ui/SmartImage'
-import { LinkButton } from '@/components/ui/Button'
+import { BookingButton, BookingGate } from '@/components/booking/BookingGate'
 import { Lightbox } from '@/components/gallery/Lightbox'
 import { useGallery, useGalleryCategories } from '@/content'
 import type { GalleryCategory, GalleryImage } from '@/types'
@@ -106,14 +106,16 @@ export default function GalleryPage() {
             </p>
           )}
 
-          <Reveal className="mt-14 flex flex-col items-center gap-4 text-center">
-            <h2 className="text-2xl text-royal-950 sm:text-3xl">
-              მოგწონთ? მოდით, თქვენი ზეიმიც ასე დავგეგმოთ.
-            </h2>
-            <LinkButton to="/booking" size="lg">
-              დაჯავშნე დაბადების დღე
-            </LinkButton>
-          </Reveal>
+          <BookingGate>
+            <Reveal className="mt-14 flex flex-col items-center gap-4 text-center">
+              <h2 className="text-2xl text-royal-950 sm:text-3xl">
+                მოგწონთ? მოდით, თქვენი ზეიმიც ასე დავგეგმოთ.
+              </h2>
+              <BookingButton size="lg">
+                დაჯავშნე დაბადების დღე
+              </BookingButton>
+            </Reveal>
+          </BookingGate>
         </Container>
       </section>
 

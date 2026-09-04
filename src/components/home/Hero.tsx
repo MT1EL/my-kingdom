@@ -1,6 +1,7 @@
 import { CalendarHeart, Gamepad2, MicVocal, PartyPopper, Sparkles } from 'lucide-react'
 import { Container } from '@/components/ui/Container'
 import { LinkButton } from '@/components/ui/Button'
+import { BookingButton } from '@/components/booking/BookingGate'
 import { SmartImage } from '@/components/ui/SmartImage'
 import { useSite } from '@/content'
 
@@ -67,10 +68,10 @@ export function Hero() {
             </p>
 
             <div className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <LinkButton to="/booking" size="lg" className="w-full sm:w-auto">
+              <BookingButton size="lg" className="w-full sm:w-auto">
                 <CalendarHeart className="size-5" />
                 დაჯავშნე ზეიმი
-              </LinkButton>
+              </BookingButton>
               <LinkButton to="/programs" variant="outline" size="lg" className="w-full sm:w-auto">
                 ნახე პროგრამები
               </LinkButton>

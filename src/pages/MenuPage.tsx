@@ -3,7 +3,7 @@ import { CalendarHeart, Info } from 'lucide-react'
 import { Container } from '@/components/ui/Container'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Reveal } from '@/components/ui/Reveal'
-import { LinkButton } from '@/components/ui/Button'
+import { BookingButton, BookingGate } from '@/components/booking/BookingGate'
 import { MenuCategoryCard } from '@/components/menu/MenuCategoryCard'
 import { useMenu, useSite } from '@/content'
 import { menuGroups } from '@/lib/menu'
@@ -33,10 +33,10 @@ export default function MenuPage() {
         title="საჭმელი, სასმელი და ფასები"
         description="ზეიმის მაგიდას თქვენს გემოვნებაზე ვაწყობთ. ქვემოთ ნახავთ, რას გთავაზობთ და რა ღირს თითოეული პოზიცია — რაოდენობას სტუმრების რიცხვის მიხედვით ერთად შევარჩევთ."
       >
-        <LinkButton to="/booking" variant="light" size="lg">
+        <BookingButton variant="light" size="lg">
           <CalendarHeart className="size-5" />
           დაჯავშნე მაგიდით
-        </LinkButton>
+        </BookingButton>
       </PageHeader>
 
       <section className="py-14 sm:py-20">
@@ -90,14 +90,17 @@ export default function MenuPage() {
               </div>
             </div>
 
-            <div className="mt-7 flex flex-col gap-4 border-t border-royal-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-pretty leading-relaxed text-royal-900/65">
-                გინდათ, მაგიდა ჩვენ ავაწყოთ? დაჯავშნეთ ზეიმი და მენიუს ერთად შევადგენთ.
-              </p>
-              <LinkButton to="/booking" className="shrink-0">
-                გადადი ჯავშანზე
-              </LinkButton>
-            </div>
+            {/* Copy and button both invite a booking, so the row goes as one. */}
+            <BookingGate>
+              <div className="mt-7 flex flex-col gap-4 border-t border-royal-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-pretty leading-relaxed text-royal-900/65">
+                  გინდათ, მაგიდა ჩვენ ავაწყოთ? დაჯავშნეთ ზეიმი და მენიუს ერთად შევადგენთ.
+                </p>
+                <BookingButton className="shrink-0">
+                  გადადი ჯავშანზე
+                </BookingButton>
+              </div>
+            </BookingGate>
           </Reveal>
         </Container>
       </section>

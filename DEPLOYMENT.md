@@ -111,6 +111,38 @@ than thrown. A failed email never turns a saved request into an error.
 
 ---
 
+## Turning booking off
+
+The booking flow can be switched off without removing any of its code. It
+takes two variables, one on each service, and both must be set — the site's
+hides the interface, the API's closes the door:
+
+| Where | Variable | Off |
+|-------|----------|-----|
+| the site (`mykingdom-site` / Netlify) | `VITE_BOOKING_ENABLED` | `false` |
+| the API (`mykingdom-api`) | `BOOKING_ENABLED` | `false` |
+
+With both set to `false`:
+
+- every button into the booking flow disappears — navbar, footer, the calls
+  to action on each page, and the "აირჩიე ეს პროგრამა" link on a programme
+  card;
+- `/booking` redirects to the home page, so links already sent out and
+  bookmarks do not hit a 404;
+- `/api/availability` and `/api/booking-requests` answer 503 with a message
+  asking the family to phone or write on Facebook, which is what a stale tab
+  or a script calling the API directly gets.
+
+Nothing is deleted: the bookings already taken stay in the database and in
+the dashboard, where they can still be read and managed. Set the variables
+back to `true` (or remove them — on is the default) and redeploy to bring
+the flow back.
+
+The site's variable is read at build time, so it takes a rebuild; the API's
+is read at boot, so it takes a restart. Render does both on a redeploy.
+
+---
+
 ## 3. After the first deploy
 
 - Sign in at `/admin` and **change the admin password**.

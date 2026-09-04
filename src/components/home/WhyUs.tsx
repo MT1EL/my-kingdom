@@ -3,7 +3,7 @@ import { SectionHeading } from '@/components/ui/SectionHeading'
 import { Reveal } from '@/components/ui/Reveal'
 import { Icon } from '@/components/ui/Icon'
 import { useBenefits, useSite } from '@/content'
-import { LinkButton } from '@/components/ui/Button'
+import { BookingButton } from '@/components/booking/BookingGate'
 
 export function WhyUs() {
   const benefits = useBenefits()
@@ -55,9 +55,9 @@ export function WhyUs() {
           <p className="max-w-2xl text-pretty text-sm leading-relaxed text-white/70">
             {site.priceNote}
           </p>
-          <LinkButton to="/booking" variant="light" className="shrink-0">
+          <BookingButton variant="light" className="shrink-0">
             გაგზავნე ჯავშნის მოთხოვნა
-          </LinkButton>
+          </BookingButton>
         </Reveal>
       </Container>
     </section>

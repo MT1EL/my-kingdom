@@ -49,6 +49,11 @@ services:
           name: mykingdom-db
           property: connectionString
 
+      # "false" closes the booking endpoints (503) without deleting a
+      # thing. Set the site's VITE_BOOKING_ENABLED to match, below.
+      - key: BOOKING_ENABLED
+        value: "true"
+
       # Render's free tier has no disk and no object storage, so the photos
       # live in Postgres and are served from /uploads.
       - key: STORAGE_DRIVER
@@ -121,6 +126,12 @@ services:
           name: mykingdom-api
           type: web
           property: host
+
+      # "false" hides every way into the booking flow and redirects
+      # /booking home. Baked into the bundle, so it takes a redeploy.
+      # Keep it in step with the API's BOOKING_ENABLED above.
+      - key: VITE_BOOKING_ENABLED
+        value: "true"
 
     routes:
       # React Router owns /menu, /programs and the rest. Without this a

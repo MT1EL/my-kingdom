@@ -75,6 +75,14 @@ POST /api/booking-requests                            → BookingRequestResult
 
 Request/response shapes live in `src/types/index.ts`.
 
+## Switching booking off
+
+`VITE_BOOKING_ENABLED=false` (the site) and `BOOKING_ENABLED=false` (the API) take the
+booking flow out of service without removing its code: every call to action disappears,
+`/booking` redirects home, and the booking endpoints answer 503. Existing bookings are
+untouched. Unset means on. See `src/lib/features.ts`, `src/components/booking/BookingGate.tsx`
+and the "Turning booking off" section of `DEPLOYMENT.md`.
+
 ## Structure
 
 ```

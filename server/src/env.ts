@@ -63,6 +63,20 @@ export const env = {
 
   port: int(process.env.PORT, 4000),
 
+  /**
+   * Whether the public booking endpoints are open.
+   *
+   * `BOOKING_ENABLED=false` makes `/api/availability` and
+   * `/api/booking-requests` answer 503 without touching the database. The
+   * bookings already taken stay in it and in the dashboard — this closes
+   * the door to new ones, it does not delete anything.
+   *
+   * The site has its own switch, `VITE_BOOKING_ENABLED`, which hides the
+   * interface; set both together, or a visitor is offered a form whose
+   * submission the API refuses.
+   */
+  bookingEnabled: process.env.BOOKING_ENABLED !== "false",
+
   /** PostgreSQL connection string. Required — there is no sensible default. */
   databaseUrl: process.env.DATABASE_URL ?? "",
   /** Free Postgres instances allow few connections; this API is not busy. */
@@ -199,6 +213,13 @@ export function assertProductionConfig(): void {
         `STORAGE_DRIVER is "cloudinary" but ${missing.join(", ")} ${missing.length === 1 ? "is" : "are"} unset — photo uploads would fail.`,
       );
     }
+  }
+  if (!env.bookingEnabled) {
+    // Deliberate, but worth saying out loud: a site left with its own
+    // booking switch on would show a form that cannot be submitted.
+    console.warn(
+      '[api] BOOKING_ENABLED is "false" — the booking endpoints answer 503. Set VITE_BOOKING_ENABLED=false on the site too.',
+    );
   }
   if (env.email.driver === "none") {
     // Not fatal, but it means a family can book and nobody finds out unless

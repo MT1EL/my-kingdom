@@ -5,7 +5,7 @@ import { useSite } from '@/content'
 import { Container } from '@/components/ui/Container'
 import { ContactValue } from '@/components/ui/ContactValue'
 import { FacebookIcon, InstagramIcon } from '@/components/ui/SocialIcons'
-import { LinkButton } from '@/components/ui/Button'
+import { BookingButton, BookingGate } from '@/components/booking/BookingGate'
 
 export function Footer() {
   const site = useSite()
@@ -78,11 +78,13 @@ export function Footer() {
                   </Link>
                 </li>
               ))}
-              <li>
-                <Link to="/booking" className="transition-colors hover:text-white">
-                  დაჯავშნა
-                </Link>
-              </li>
+              <BookingGate>
+                <li>
+                  <Link to="/booking" className="transition-colors hover:text-white">
+                    დაჯავშნა
+                  </Link>
+                </li>
+              </BookingGate>
             </ul>
           </nav>
 
@@ -128,9 +130,9 @@ export function Footer() {
               </li>
             </ul>
 
-            <LinkButton to="/booking" variant="light" size="sm" className="mt-6">
+            <BookingButton variant="light" size="sm" className="mt-6">
               დაჯავშნე ზეიმი
-            </LinkButton>
+            </BookingButton>
           </div>
         </div>
 

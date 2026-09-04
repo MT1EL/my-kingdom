@@ -39,6 +39,11 @@ export class ApiError extends Error {
   static conflict(code: string, message: string) {
     return new ApiError(409, code, message)
   }
+
+  /** A feature that exists but is switched off, rather than a failure. */
+  static unavailable(code: string, message: string) {
+    return new ApiError(503, code, message)
+  }
 }
 
 /**

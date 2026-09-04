@@ -6,6 +6,7 @@ import { navLinks } from '@/data/nav'
 import { useSite } from '@/content'
 import { Container } from '@/components/ui/Container'
 import { LinkButton } from '@/components/ui/Button'
+import { BookingButton, BookingGate } from '@/components/booking/BookingGate'
 
 export function Navbar() {
   const site = useSite()
@@ -95,13 +96,15 @@ export function Navbar() {
           </ul>
 
           <div className="flex items-center gap-2">
-            <span className="hidden sm:block">
-              <LinkButton to="/booking" size="sm">
-                <CalendarHeart className="size-4" />
-                <span className="hidden md:block">დაჯავშნე დაბადების დღე</span>
-                <span className="md:hidden">დაჯავშნე</span>
-              </LinkButton>
-            </span>
+            <BookingGate>
+              <span className="hidden sm:block">
+                <LinkButton to="/booking" size="sm">
+                  <CalendarHeart className="size-4" />
+                  <span className="hidden md:block">დაჯავშნე დაბადების დღე</span>
+                  <span className="md:hidden">დაჯავშნე</span>
+                </LinkButton>
+              </span>
+            </BookingGate>
 
             <button
               type="button"
@@ -146,10 +149,10 @@ export function Navbar() {
               </li>
             ))}
           </ul>
-          <LinkButton to="/booking" className="mt-3 w-full" size="md">
+          <BookingButton className="mt-3 w-full" size="md">
             <CalendarHeart className="size-4" />
             დაჯავშნე დაბადების დღე
-          </LinkButton>
+          </BookingButton>
         </Container>
       </div>
     </header>

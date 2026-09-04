@@ -1,5 +1,7 @@
 import { Container } from '@/components/ui/Container'
 import { LinkButton } from '@/components/ui/Button'
+import { BookingButton } from '@/components/booking/BookingGate'
+import { bookingEnabled } from '@/lib/features'
 import { usePageMeta } from '@/lib/usePageMeta'
 
 export default function NotFoundPage() {
@@ -19,16 +21,17 @@ export default function NotFoundPage() {
           ეს გვერდი სამეფოში ვერ ვიპოვეთ
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-pretty leading-relaxed text-royal-900/70">
-          შესაძლოა ბმული შეიცვალა ან გვერდი წაიშალა. დაბრუნდით მთავარზე ან პირდაპირ ჯავშანზე
-          გადადით.
+          {bookingEnabled
+            ? 'შესაძლოა ბმული შეიცვალა ან გვერდი წაიშალა. დაბრუნდით მთავარზე ან პირდაპირ ჯავშანზე გადადით.'
+            : 'შესაძლოა ბმული შეიცვალა ან გვერდი წაიშალა. დაბრუნდით მთავარ გვერდზე.'}
         </p>
         <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
           <LinkButton to="/" size="lg">
             მთავარ გვერდზე
           </LinkButton>
-          <LinkButton to="/booking" variant="outline" size="lg">
+          <BookingButton variant="outline" size="lg">
             დაჯავშნე ზეიმი
-          </LinkButton>
+          </BookingButton>
         </div>
       </Container>
     </section>

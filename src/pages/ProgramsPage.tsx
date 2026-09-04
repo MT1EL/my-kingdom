@@ -3,7 +3,7 @@ import { CalendarHeart } from 'lucide-react'
 import { Container } from '@/components/ui/Container'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Reveal } from '@/components/ui/Reveal'
-import { LinkButton } from '@/components/ui/Button'
+import { BookingButton } from '@/components/booking/BookingGate'
 import { ProgramCard } from '@/components/programs/ProgramCard'
 import { usePrograms, useSite } from '@/content'
 import { usePageMeta } from '@/lib/usePageMeta'
@@ -40,10 +40,10 @@ export default function ProgramsPage() {
         title="აირჩიე ზეიმის თემა"
         description="თითოეული პროგრამა მზა სცენარია — ანიმატორით, დეკორაციით, მუსიკითა და თამაშებით. თემა ბავშვის ინტერესებზე ვარგებთ, ასაკი კი მხოლოდ რეკომენდაციაა."
       >
-        <LinkButton to="/booking" variant="light" size="lg">
+        <BookingButton variant="light" size="lg">
           <CalendarHeart className="size-5" />
           გადადი ჯავშანზე
-        </LinkButton>
+        </BookingButton>
       </PageHeader>
 
       <section className="py-14 sm:py-20">
@@ -94,9 +94,9 @@ export default function ProgramsPage() {
                 {site.priceNote}
               </p>
             </div>
-            <LinkButton to="/booking" className="shrink-0">
+            <BookingButton className="shrink-0">
               დაგვიკავშირდი ჯავშნით
-            </LinkButton>
+            </BookingButton>
           </Reveal>
         </Container>
       </section>

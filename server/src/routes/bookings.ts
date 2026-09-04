@@ -1,6 +1,7 @@
 import { and, eq, inArray } from 'drizzle-orm'
 import { Router } from 'express'
 import { db, schema } from '../db/client.ts'
+import { env } from '../env.ts'
 import { getAvailability, getDayAvailability, isISODate } from '../lib/availability.ts'
 import { ApiError, route } from '../lib/http.ts'
 import { newId } from '../lib/ids.ts'
@@ -18,6 +19,28 @@ import type { BookingRequestResult, ISODate } from '../../../shared/types.ts'
 ------------------------------------------------------------------- */
 
 export const bookingsRouter: Router = Router()
+
+/**
+ * The switch, in front of every booking endpoint.
+ *
+ * With `BOOKING_ENABLED=false` the routes below stay registered but are
+ * never reached, so no request can be made while the venue is not taking
+ * them — including from a stale tab or a script calling the API directly,
+ * neither of which the site's own switch reaches. 503 rather than 404: the
+ * endpoint exists, it is just closed for now.
+ */
+bookingsRouter.use((_req, _res, next) => {
+  if (env.bookingEnabled) {
+    next()
+    return
+  }
+  next(
+    ApiError.unavailable(
+      'BOOKING_DISABLED',
+      'ონლაინ ჯავშანი დროებით გათიშულია. გთხოვთ, დაგვიკავშირდეთ ტელეფონით ან Facebook-ით.',
+    ),
+  )
+})
 
 /** How far ahead the calendar may be queried, from site settings. */
 async function bookingWindow(): Promise<{ minLeadDays: number; maxAheadDays: number; maxChildren: number }> {
